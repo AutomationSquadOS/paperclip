@@ -25,6 +25,7 @@ import { useToastActions } from "../context/ToastContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
 import { AgentSkillsTab } from "./agent-skills/AgentSkillsTab";
+import { AgentChatTab } from "./AgentChatTab";
 import { AgentConfigForm } from "../components/AgentConfigForm";
 import { PageTabBar } from "../components/PageTabBar";
 import { adapterLabels, roleLabels, help } from "../components/agent-config-primitives";
@@ -271,7 +272,7 @@ function scrollToContainerBottom(container: ScrollContainer, behavior: ScrollBeh
   container.scrollTo({ top: container.scrollHeight, behavior });
 }
 
-type AgentDetailView = "dashboard" | "instructions" | "configuration" | "skills" | "tools" | "runs" | "budget";
+type AgentDetailView = "dashboard" | "instructions" | "configuration" | "skills" | "tools" | "runs" | "budget" | "chat";
 
 function parseAgentDetailView(value: string | null): AgentDetailView {
   if (value === "instructions" || value === "prompts") return "instructions";
@@ -279,6 +280,7 @@ function parseAgentDetailView(value: string | null): AgentDetailView {
   if (value === "skills") return "skills";
   if (value === "tools") return "tools";
   if (value === "budget") return "budget";
+  if (value === "chat") return "chat";
   if (value === "runs") return value;
   return "dashboard";
 }
@@ -900,7 +902,9 @@ export function AgentDetail() {
                 ? "runs"
                 : activeView === "budget"
                   ? "budget"
-              : "dashboard";
+                  : activeView === "chat"
+                    ? "chat"
+                    : "dashboard";
     if (routeAgentRef !== canonicalAgentRef || urlTab !== canonicalTab) {
       navigate(`/agents/${canonicalAgentRef}/${canonicalTab}`, { replace: true });
       return;
@@ -1009,6 +1013,8 @@ export function AgentDetail() {
         crumbs.push({ label: "Runs" });
       } else if (activeView === "budget") {
         crumbs.push({ label: "Budget" });
+      } else if (activeView === "chat") {
+        crumbs.push({ label: "Chat" });
       } else {
         crumbs.push({ label: "Dashboard" });
       }
@@ -1245,6 +1251,7 @@ export function AgentDetail() {
           <PageTabBar
             items={[
               { value: "dashboard", label: "Dashboard" },
+              { value: "chat", label: "Chat" },
               { value: "instructions", label: "Instructions" },
               { value: "skills", label: "Skills" },
               { value: "configuration", label: "Configuration" },
@@ -1333,6 +1340,10 @@ export function AgentDetail() {
           agentId={agent.id}
           agentRouteId={canonicalAgentRef}
         />
+      )}
+
+      {activeView === "chat" && resolvedCompanyId && (
+        <AgentChatTab agent={agent} companyId={resolvedCompanyId} />
       )}
 
       {activeView === "instructions" && (

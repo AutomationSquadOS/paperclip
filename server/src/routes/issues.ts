@@ -4810,6 +4810,8 @@ export function issueRoutes(
         req.query.includeRoutineExecutions === "true" || req.query.includeRoutineExecutions === "1",
       excludeRoutineExecutions:
         req.query.excludeRoutineExecutions === "true" || req.query.excludeRoutineExecutions === "1",
+      includeAgentChat:
+        req.query.includeAgentChat === "true" || req.query.includeAgentChat === "1",
       includePluginOperations:
         req.query.includePluginOperations === "true" || req.query.includePluginOperations === "1",
       includeBlockedBy: req.query.includeBlockedBy === "true" || req.query.includeBlockedBy === "1",
@@ -5002,6 +5004,8 @@ export function issueRoutes(
         req.query.includeRoutineExecutions === "true" || req.query.includeRoutineExecutions === "1",
       excludeRoutineExecutions:
         req.query.excludeRoutineExecutions === "true" || req.query.excludeRoutineExecutions === "1",
+      includeAgentChat:
+        req.query.includeAgentChat === "true" || req.query.includeAgentChat === "1",
       includePluginOperations:
         req.query.includePluginOperations === "true" || req.query.includePluginOperations === "1",
       includeBlockedBy: true,

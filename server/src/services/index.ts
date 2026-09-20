@@ -8,6 +8,13 @@ export { companySkillPolicyService, normalizeSkillPolicySourceType } from "./com
 export { folderService } from "./folders.js";
 export { agentService, deduplicateAgentName } from "./agents.js";
 export {
+  agentChatService,
+  agentChatBlockMessage,
+  resolveAgentChatBlockReason,
+  nonAgentChatIssueCondition,
+  shouldIncludeAgentChatIssues,
+} from "./agent-chat.js";
+export {
   builtInAgentService,
   deriveBuiltInAgentStatus,
   getBuiltInAgentDefinition,

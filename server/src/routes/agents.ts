@@ -49,6 +49,7 @@ import {
   issueApprovalService,
   issueRecoveryActionService,
   issueService,
+  agentChatService,
   logActivity,
   syncInstructionsBundleConfigFromFilePath,
   workspaceOperationService,
@@ -2220,6 +2221,47 @@ export function agentRoutes(
       return;
     }
     res.json(await buildAgentDetail(agent));
+  });
+
+  router.get("/agents/:id/chat", async (req, res) => {
+    const id = req.params.id as string;
+    const agent = await getAccessibleResource(req, res, svc.getById(id), "Agent not found");
+    if (!agent) return;
+    await assertBoardCanManageAgentsForCompany(req, agent.companyId);
+    const chat = agentChatService(db);
+    const result = await chat.getConversationIssue(agent.id);
+    res.json(result);
+  });
+
+  router.post("/agents/:id/chat", async (req, res) => {
+    const id = req.params.id as string;
+    const agent = await getAccessibleResource(req, res, svc.getById(id), "Agent not found");
+    if (!agent) return;
+    await assertBoardCanManageAgentsForCompany(req, agent.companyId);
+    const actor = getActorInfo(req);
+    const chat = agentChatService(db);
+    const result = await chat.ensureConversationIssue(agent.id, {
+      userId: actor.actorType === "user" ? actor.actorId : null,
+    });
+    if (result.created) {
+      await logActivity(db, {
+        companyId: agent.companyId,
+        actorType: actor.actorType,
+        actorId: actor.actorId,
+        agentId: actor.agentId,
+        runId: actor.runId,
+        agentApiKeyId: actor.agentApiKeyId,
+        action: "agent.chat_issue_created",
+        entityType: "issue",
+        entityId: result.issue.id,
+        details: {
+          agentId: agent.id,
+          originKind: "agent_chat",
+          identifier: result.issue.identifier ?? null,
+        },
+      });
+    }
+    res.status(result.created ? 201 : 200).json(result);
   });
 
   router.get("/agents/:id/configuration", async (req, res) => {
