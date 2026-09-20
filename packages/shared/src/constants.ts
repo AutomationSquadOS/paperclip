@@ -283,6 +283,11 @@ export type IssueThreadInteractionContinuationPolicy =
 
 export const TASK_WATCHDOG_PRODUCT_BUG_ORIGIN_KIND = "task_watchdog_product_bug";
 
+/** Standing per-agent board chat thread (AgentDetail Chat tab). */
+export const AGENT_CHAT_ORIGIN_KIND = "agent_chat";
+/** Company label applied to agent-chat conversation issues for board filtering. */
+export const AGENT_CHAT_LABEL_NAME = "agent-chat";
+
 export const ISSUE_ORIGIN_KINDS = [
   "manual",
   "routine_execution",
@@ -292,6 +297,7 @@ export const ISSUE_ORIGIN_KINDS = [
   "stranded_issue_recovery",
   "task_watchdog",
   TASK_WATCHDOG_PRODUCT_BUG_ORIGIN_KIND,
+  AGENT_CHAT_ORIGIN_KIND,
 ] as const;
 export type BuiltInIssueOriginKind = (typeof ISSUE_ORIGIN_KINDS)[number];
 export type PluginIssueOriginKind = `plugin:${string}`;

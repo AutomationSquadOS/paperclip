@@ -16,6 +16,7 @@ import type {
   AgentConfigRevision,
   ClearAgentErrorResponse,
   AgentApiKeyScope,
+  Issue,
 } from "@paperclipai/shared";
 import type {
   AdapterModelProfileDefinition,
@@ -75,6 +76,30 @@ export interface AgentPermissionUpdate {
   canAssignTasks: boolean;
   trustPreset?: AgentPermissions["trustPreset"];
   authorizationPolicy?: AgentPermissions["authorizationPolicy"];
+}
+
+export type AgentChatBlockReason =
+  | "pending_approval"
+  | "paused"
+  | "terminated"
+  | "budget_paused"
+  | "error"
+  | "invalid_org_chain";
+
+export interface AgentChatConversation {
+  issue: Issue | null;
+  created: boolean;
+  agentId: string;
+  companyId: string;
+  blockReason: AgentChatBlockReason | null;
+}
+
+export interface AgentChatEnsureResult {
+  issue: Issue;
+  created: boolean;
+  agentId: string;
+  companyId: string;
+  blockReason: AgentChatBlockReason | null;
 }
 
 export interface AgentWakeRequest {
@@ -188,6 +213,10 @@ export const agentsApi = {
     api.get<AgentRuntimeState>(agentPath(id, companyId, "/runtime-state")),
   taskSessions: (id: string, companyId?: string) =>
     api.get<AgentTaskSession[]>(agentPath(id, companyId, "/task-sessions")),
+  getChat: (id: string, companyId?: string) =>
+    api.get<AgentChatConversation>(agentPath(id, companyId, "/chat")),
+  ensureChat: (id: string, companyId?: string) =>
+    api.post<AgentChatEnsureResult>(agentPath(id, companyId, "/chat"), {}),
   resetSession: (id: string, taskKey?: string | null, companyId?: string) =>
     api.post<void>(agentPath(id, companyId, "/runtime-state/reset-session"), { taskKey: taskKey ?? null }),
   adapterModels: (

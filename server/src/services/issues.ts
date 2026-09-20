@@ -106,6 +106,7 @@ import {
   RECOVERY_ORIGIN_KINDS,
 } from "./recovery/origins.js";
 import { classifyIssueGraphLiveness, type IssueLivenessFinding } from "./recovery/issue-graph-liveness.js";
+import { nonAgentChatIssueCondition, shouldIncludeAgentChatIssues } from "./agent-chat.js";
 import { visibleIssueCondition } from "./issue-visibility.js";
 import { finalizeStatusCardsForStalledGeneration } from "./status-card-finalization.js";
 import { finalizeSummarySlotsForTerminalIssue } from "./summary-slot-finalization.js";
@@ -500,6 +501,7 @@ export interface IssueFilters {
   labelId?: string;
   originKind?: string;
   originKindPrefix?: string;
+  includeAgentChat?: boolean;
   originId?: string;
   includeRoutineExecutions?: boolean;
   excludeRoutineExecutions?: boolean;
@@ -3623,6 +3625,7 @@ async function blockedInboxIssueConditions(
     conditions.push(hasPlanDocumentCondition(companyId, filters.hasPlanDocument));
   }
   if (!shouldIncludePluginOperationIssues(filters)) conditions.push(nonPluginOperationIssueCondition());
+  if (!shouldIncludeAgentChatIssues(filters)) conditions.push(nonAgentChatIssueCondition());
   if (filters?.labelId) {
     const labeledIssueIds = await dbOrTx
       .select({ issueId: issueLabels.issueId })
@@ -4932,6 +4935,9 @@ export function issueService(db: Db) {
       if (!shouldIncludePluginOperationIssues(filters)) {
         conditions.push(nonPluginOperationIssueCondition());
       }
+      if (!shouldIncludeAgentChatIssues(filters)) {
+        conditions.push(nonAgentChatIssueCondition());
+      }
       if (filters?.labelId) {
         const labeledIssueIds = await db
           .select({ issueId: issueLabels.issueId })
@@ -5108,6 +5114,7 @@ export function issueService(db: Db) {
         conditions.push(hasPlanDocumentCondition(companyId, filters.hasPlanDocument));
       }
       if (!shouldIncludePluginOperationIssues(filters)) conditions.push(nonPluginOperationIssueCondition());
+      if (!shouldIncludeAgentChatIssues(filters)) conditions.push(nonAgentChatIssueCondition());
       const [row] = await db
         .select({ count: sql<number>`count(*)` })
         .from(issues)
@@ -5124,6 +5131,7 @@ export function issueService(db: Db) {
         eq(issues.companyId, companyId),
         visibleIssueCondition(),
         nonPluginOperationIssueCondition(),
+        nonAgentChatIssueCondition(),
         unreadForUserCondition(companyId, userId),
       ];
       const statuses = parseStatusFilter(status);
