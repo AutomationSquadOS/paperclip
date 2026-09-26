@@ -61,6 +61,18 @@ export const models: Array<{ id: string; label: string }> = [
   { id: "openai/gpt-5.2", label: "openai/gpt-5.2" },
   { id: "openai/gpt-5.1-codex-max", label: "openai/gpt-5.1-codex-max" },
   { id: "openai/gpt-5.1-codex-mini", label: "openai/gpt-5.1-codex-mini" },
+  { id: "openai/gpt-6-astra", label: "openai/gpt-6-astra" },
+  { id: "openai/gpt-6-sol", label: "openai/gpt-6-sol" },
+  { id: "openai/gpt-6-luna", label: "openai/gpt-6-luna" },
+  { id: "openai/gpt-5.6-sol", label: "openai/gpt-5.6-sol" },
+  { id: "openai/gpt-5.6-terra", label: "openai/gpt-5.6-terra" },
+  { id: "openai/gpt-5.6-luna", label: "openai/gpt-5.6-luna" },
+  { id: "anthropic/claude-opus-5-5", label: "anthropic/claude-opus-5-5" },
+  { id: "anthropic/claude-opus-5", label: "anthropic/claude-opus-5" },
+  { id: "anthropic/claude-fable-5-1", label: "anthropic/claude-fable-5-1" },
+  { id: "anthropic/claude-sonnet-5", label: "anthropic/claude-sonnet-5" },
+  { id: "google/gemini-3.8-flash", label: "google/gemini-3.8-flash" },
+  { id: "xai/grok-4.7", label: "xai/grok-4.7" },
 ];
 
 export const DEFAULT_OPENCODE_CHEAP_MODEL = "openai/gpt-5.1-codex-mini";
