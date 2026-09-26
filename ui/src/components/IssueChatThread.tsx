@@ -490,6 +490,12 @@ interface IssueChatThreadProps {
   emptyMessage?: string;
   footer?: ReactNode;
   variant?: "full" | "embedded";
+  /**
+   * Dedicated chat-window presentation (agent Chat tab): roomier turn spacing,
+   * padded transcript, and a clear “Your message” composer framing.
+   * Does not change comment/run semantics — layout only.
+   */
+  presentation?: "default" | "conversation";
   enableLiveTranscriptPolling?: boolean;
   transcriptsByRunId?: ReadonlyMap<string, readonly IssueChatTranscriptEntry[]>;
   hasOutputForRun?: (runId: string) => boolean;
@@ -3003,6 +3009,7 @@ interface VirtualizedIssueChatThreadListProps {
   stoppingRunId?: string | null;
   interruptingQueuedRunId?: string | null;
   variant: "full" | "embedded";
+  presentation?: "default" | "conversation";
 }
 
 interface VirtualizedIssueChatThreadListHandle {
@@ -3267,6 +3274,7 @@ const VirtualizedIssueChatThreadListInner = forwardRef<
   stoppingRunId,
   interruptingQueuedRunId,
   variant,
+  presentation = "default",
   mode,
   probeRef,
 }, ref) {
@@ -3297,7 +3305,7 @@ const VirtualizedIssueChatThreadListInner = forwardRef<
     };
   }, [mode]);
 
-  const gap = variant === "embedded"
+  const gap = variant === "embedded" && presentation !== "conversation"
     ? VIRTUALIZED_THREAD_GAP_EMBEDDED_PX
     : VIRTUALIZED_THREAD_GAP_FULL_PX;
 
@@ -4235,6 +4243,7 @@ export function IssueChatThread({
   emptyMessage,
   footer,
   variant = "full",
+  presentation = "default",
   enableLiveTranscriptPolling = true,
   transcriptsByRunId,
   hasOutputForRun: hasOutputForRunOverride,
@@ -4845,7 +4854,9 @@ export function IssueChatThread({
     ],
   );
 
-  const resolvedShowJumpToLatest = showJumpToLatest ?? variant === "full";
+  const isConversation = presentation === "conversation";
+  const turnGapClass = variant === "embedded" && !isConversation ? "space-y-3" : "space-y-4";
+  const resolvedShowJumpToLatest = showJumpToLatest ?? (variant === "full" || isConversation);
   const resolvedEmptyMessage = emptyMessage
     ?? (variant === "embedded"
       ? "No run output yet."
@@ -4861,9 +4872,9 @@ export function IssueChatThread({
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <IssueChatCtx.Provider value={chatCtx}>
-      <div className={cn(variant === "embedded" ? "space-y-3" : "space-y-4")}>
+      <div className={cn(turnGapClass, isConversation && "flex min-h-0 flex-1 flex-col")}>
         {resolvedShowJumpToLatest ? (
-          <div className="flex justify-end">
+          <div className="flex justify-end px-1">
             <button
               type="button"
               onClick={handleJumpToLatest}
@@ -4881,17 +4892,22 @@ export function IssueChatThread({
           variant={variant}
           externalReferences={externalReferences}
         >
-          <div data-testid="thread-root">
+          <div data-testid="thread-root" className={cn(isConversation && "min-h-0 flex-1")}>
             <div
               data-testid="thread-viewport"
-              className={variant === "embedded" ? "space-y-3" : "space-y-4"}
+              className={cn(
+                turnGapClass,
+                isConversation && "px-3 pb-2 sm:px-4",
+              )}
             >
               {messages.length === 0 ? (
                 <Card className={cn(
                   "block shadow-none text-center text-sm text-muted-foreground",
-                  variant === "embedded"
-                    ? "border-dashed border-border/70 bg-background/60 px-4 py-6"
-                    : "border-dashed px-6 py-10",
+                  isConversation
+                    ? "border-dashed border-border/60 bg-muted/20 px-6 py-12"
+                    : variant === "embedded"
+                      ? "border-dashed border-border/70 bg-background/60 px-4 py-6"
+                      : "border-dashed px-6 py-10",
                 )}>
                   {resolvedEmptyMessage}
                 </Card>
@@ -4904,6 +4920,7 @@ export function IssueChatThread({
                   stoppingRunId={stoppingRunId}
                   interruptingQueuedRunId={interruptingQueuedRunId}
                   variant={variant}
+                  presentation={presentation}
                 />
               ) : (
                 // Keep transcript rendering independent from assistant-ui's
@@ -5016,8 +5033,23 @@ export function IssueChatThread({
           <div
             ref={composerViewportAnchorRef}
             data-testid="issue-chat-composer-dock"
-            className="sticky bottom-(--sz-calc-8) z-20 space-y-2 bg-gradient-to-t from-background via-background/95 to-background/0 pt-6"
+            className={cn(
+              "sticky bottom-(--sz-calc-8) z-20 space-y-2 bg-gradient-to-t pt-6",
+              isConversation
+                ? "border-t border-border/60 from-background via-background to-background/90 px-3 pb-3 sm:px-4"
+                : "from-background via-background/95 to-background/0",
+            )}
           >
+            {isConversation ? (
+              <div className="flex items-center justify-between gap-2 px-0.5">
+                <span className="text-(length:--text-micro) font-medium uppercase tracking-(--tracking-eyebrow) text-muted-foreground">
+                  Your message
+                </span>
+                <span className="text-(length:--text-micro) text-muted-foreground/80">
+                  Replies appear on the right
+                </span>
+              </div>
+            ) : null}
             <IssueChatComposer
               ref={composerRef}
               onImageUpload={imageUploadHandler}
