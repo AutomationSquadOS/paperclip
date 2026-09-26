@@ -278,7 +278,7 @@ export function AgentActionButtons({
         await queryClient.invalidateQueries({ queryKey: queryKeys.agents.list(resolvedCompanyId) });
       }
       pushToast({ title: "Agent duplicated", body: createdAgent.name, tone: "success" });
-      navigate(`/agents/${agentRouteRef(createdAgent)}/dashboard`);
+      navigate(`/agents/${agentRouteRef(createdAgent)}/chat`);
     },
     onError: (err) => {
       const message = err instanceof Error ? err.message : "Failed to duplicate agent";
