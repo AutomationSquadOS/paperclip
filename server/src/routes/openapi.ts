@@ -796,6 +796,8 @@ const BOARD_ONLY_OPERATIONS = new Set([
   "GET /api/tool-connections/{connectionId}/test-calls/{actionRequestId}",
   "POST /api/agents/me/connections/{connectionId}/start-authorization",
   "POST /api/agents/me/connections/{connectionId}/token",
+  "GET /api/agents/{id}/chat",
+  "POST /api/agents/{id}/chat",
   "POST /api/tools/oauth/{connectionId}/start",
   "GET /api/tools/oauth/callback",
   "GET /api/companies/{companyId}/tools/profiles",
@@ -1850,6 +1852,31 @@ registry.registerPath({
   summary: "Delete an agent API key",
   request: { params: z.object({ id: z.string(), keyId: z.string() }) },
   responses: { 200: r.ok(), 401: r.unauthorized, 404: r.notFound },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/agents/{id}/chat",
+  tags: ["agents"],
+  summary: "Get the standing agent chat conversation issue",
+  request: { params: z.object({ id: z.string() }) },
+  responses: { 200: r.ok(), 401: r.unauthorized, 403: r.forbidden, 404: r.notFound },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/agents/{id}/chat",
+  tags: ["agents"],
+  summary: "Ensure a standing agent chat conversation issue",
+  request: { params: z.object({ id: z.string() }) },
+  responses: {
+    200: r.ok(),
+    201: r.ok(),
+    401: r.unauthorized,
+    403: r.forbidden,
+    404: r.notFound,
+    409: r.conflict,
+  },
 });
 
 registry.registerPath({

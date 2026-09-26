@@ -234,6 +234,8 @@ interface IssueChatMessageContext {
   externalReferences?: MarkdownExternalReferenceMap;
   /** Linkify `PAP-C7` case chips in comment bodies (experimental Cases flag). */
   linkCaseReferences?: boolean;
+  /** Chat-window layout mode (agent Chat tab). Layout only. */
+  presentation?: "default" | "conversation";
 }
 
 const IssueChatCtx = createContext<IssueChatMessageContext>({
@@ -241,6 +243,7 @@ const IssueChatCtx = createContext<IssueChatMessageContext>({
   feedbackTermsUrl: null,
   issueStatus: undefined,
   successfulRunHandoff: null,
+  presentation: "default",
 });
 
 const AGENT_COMMENT_BUBBLE_WIDTH_CLASS = "max-w-(--sz-calc-7) sm:max-w-(--pct-85)";
@@ -490,6 +493,12 @@ interface IssueChatThreadProps {
   emptyMessage?: string;
   footer?: ReactNode;
   variant?: "full" | "embedded";
+  /**
+   * Dedicated chat-window presentation (agent Chat tab): roomier turn spacing,
+   * padded transcript, and a clear “Your message” composer framing.
+   * Does not change comment/run semantics — layout only.
+   */
+  presentation?: "default" | "conversation";
   enableLiveTranscriptPolling?: boolean;
   transcriptsByRunId?: ReadonlyMap<string, readonly IssueChatTranscriptEntry[]>;
   hasOutputForRun?: (runId: string) => boolean;
@@ -1415,7 +1424,9 @@ function IssueChatUserMessage({
     onDeleteComment,
     currentUserId,
     userProfileMap,
+    presentation,
   } = useContext(IssueChatCtx);
+  const isConversation = presentation === "conversation";
   const custom = message.metadata.custom as Record<string, unknown>;
   const anchorId = typeof custom.anchorId === "string" ? custom.anchorId : undefined;
   const commentId = typeof custom.commentId === "string" ? custom.commentId : message.id;
@@ -1443,7 +1454,7 @@ function IssueChatUserMessage({
     userProfileMap,
   });
   const authorAvatar = (
-    <Avatar size="sm" className="shrink-0">
+    <Avatar size={isConversation ? "default" : "sm"} className="shrink-0">
       {avatarUrl ? <AvatarImage src={avatarUrl} alt={resolvedAuthorName} /> : null}
       <AvatarFallback>{initialsForName(resolvedAuthorName)}</AvatarFallback>
     </Avatar>
@@ -1462,6 +1473,11 @@ function IssueChatUserMessage({
     <div className={cn("flex min-w-0 max-w-(--pct-85) flex-col", isCurrentUser && "items-end")}>
       <div className={cn("mb-1 flex items-center gap-2 px-1", isCurrentUser ? "justify-end" : "justify-start")}>
         <span className="text-sm font-medium text-foreground">{resolvedAuthorName}</span>
+        {isConversation && isCurrentUser ? (
+          <Badge variant="outline" className="border-(--liveness-blue)/40 bg-(--liveness-blue)/10 text-(length:--text-nano) uppercase tracking-(--tracking-eyebrow) text-(--liveness-blue)">
+            You
+          </Badge>
+        ) : null}
         <SourceTrustBadge sourceTrust={sourceTrust} artifactLabel="comment" />
         {followUpRequested ? (
           <Badge variant="outline" className="text-(length:--text-nano) uppercase tracking-(--tracking-eyebrow)">
@@ -1475,6 +1491,7 @@ function IssueChatUserMessage({
           // Tail-hugging corner: flatten the bottom corner nearest the avatar so
           // the bubble points at it (bottom-right for the right-aligned human).
           isCurrentUser ? "rounded-br-(--rad-4)" : "rounded-bl-(--rad-4)",
+          isConversation && "shadow-(--shadow-extract-4)",
           queued
             ? "bg-amber-50/80 dark:bg-amber-500/10"
             : deleted
@@ -1593,7 +1610,13 @@ function IssueChatUserMessage({
   return (
     <>
       <div id={anchorId}>
-        <div className={cn("group flex items-end gap-2", isCurrentUser && "justify-end")}>
+        <div
+          className={cn(
+            "group flex items-end gap-2",
+            isConversation && "gap-3 py-1",
+            isCurrentUser && "justify-end",
+          )}
+        >
           {isCurrentUser ? (
             <>
               {messageBody}
@@ -1647,10 +1670,12 @@ function IssueChatAssistantMessage({
     agentMap,
     onStopRun,
     stopRunLabel = "Stop run",
+    presentation,
     stoppingRunLabel = "Stopping...",
     stopRunVariant = "stop",
     runFinalizationActions = [],
   } = useContext(IssueChatCtx);
+  const isConversation = presentation === "conversation";
   const custom = message.metadata.custom as Record<string, unknown>;
   const anchorId = typeof custom.anchorId === "string" ? custom.anchorId : undefined;
   const authorName = typeof custom.authorName === "string"
@@ -1722,9 +1747,11 @@ function IssueChatAssistantMessage({
     kind === "comment" && !!commentId && !isRunning && (hasCommentText || deleted);
 
   const agentAvatar = (
-    <Avatar size="sm" className="shrink-0">
+    <Avatar size={isConversation ? "default" : "sm"} className="shrink-0">
       {agentIcon ? (
-        <AvatarFallback><AgentIcon icon={agentIcon} className="h-3.5 w-3.5" /></AvatarFallback>
+        <AvatarFallback>
+          <AgentIcon icon={agentIcon} className={isConversation ? "h-4 w-4" : "h-3.5 w-3.5"} />
+        </AvatarFallback>
       ) : (
         <AvatarFallback>{initialsForName(authorName)}</AvatarFallback>
       )}
@@ -1837,6 +1864,66 @@ function IssueChatAssistantMessage({
   // Genuine agent comment → neutral left-aligned bubble (mirror of the human
   // blue bubble in IssueChatUserMessage). See PAP-95 rev 6.
   if (isGenuineComment) {
+    const agentBubble = (
+      <div
+        className={cn(
+          "min-w-0 break-words px-3 py-2 text-sm overflow-x-auto overflow-y-visible [border-radius:14px_14px_14px_4px]",
+          AGENT_COMMENT_BUBBLE_WIDTH_CLASS,
+          isConversation && "shadow-(--shadow-extract-4)",
+          deleted
+            ? "border border-border bg-muted/50 text-muted-foreground"
+            : "border border-border bg-card text-foreground",
+        )}
+      >
+        {deleted ? (
+          <div className="text-sm italic text-muted-foreground">Comment deleted</div>
+        ) : (
+          <div className="min-w-0 max-w-full space-y-3">
+            <IssueChatAssistantParts message={message} hasCoT={false} />
+            {notices.length > 0 ? (
+              <div className="space-y-2">
+                {notices.map((notice, index) => (
+                  <div
+                    key={`${message.id}:notice:${index}`}
+                    className="rounded-sm border border-border/60 bg-accent/20 px-3 py-2 text-sm text-muted-foreground"
+                  >
+                    {notice}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+    );
+
+    if (isConversation) {
+      // Chat window: avatar beside bubble (ChatGPT/Claude left-rail style).
+      return (
+        <div id={anchorId}>
+          <div className="group flex items-end gap-3 py-1">
+            {agentAvatar}
+            <div className="flex min-w-0 max-w-(--pct-85) flex-col items-start">
+              <div className="mb-1 flex items-center gap-1.5 px-1">
+                <span className="text-sm font-medium text-foreground">{authorName}</span>
+                <Badge variant="outline" className="text-(length:--text-nano) uppercase tracking-(--tracking-eyebrow) text-muted-foreground">
+                  Agent
+                </Badge>
+                <SourceTrustBadge sourceTrust={sourceTrust} artifactLabel="comment" />
+                {followUpRequested ? (
+                  <Badge variant="outline" className="text-(length:--text-nano) uppercase tracking-(--tracking-eyebrow)">
+                    Follow-up
+                  </Badge>
+                ) : null}
+              </div>
+              {agentBubble}
+              {!deleted ? messageActionBar : null}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div id={anchorId}>
         <div className="group flex flex-col items-start py-1.5">
@@ -1860,35 +1947,7 @@ function IssueChatAssistantMessage({
             ) : null}
           </div>
           {/* Canonical conference-room agent bubble (BoardChat.tsx:712). */}
-          <div
-            className={cn(
-              "min-w-0 break-words px-3 py-2 text-sm overflow-x-auto overflow-y-visible [border-radius:14px_14px_14px_4px]",
-              AGENT_COMMENT_BUBBLE_WIDTH_CLASS,
-              deleted
-                ? "border border-border bg-muted/50 text-muted-foreground"
-                : "border border-border bg-card text-foreground",
-            )}
-          >
-            {deleted ? (
-              <div className="text-sm italic text-muted-foreground">Comment deleted</div>
-            ) : (
-              <div className="min-w-0 max-w-full space-y-3">
-                <IssueChatAssistantParts message={message} hasCoT={false} />
-                {notices.length > 0 ? (
-                  <div className="space-y-2">
-                    {notices.map((notice, index) => (
-                      <div
-                        key={`${message.id}:notice:${index}`}
-                        className="rounded-sm border border-border/60 bg-accent/20 px-3 py-2 text-sm text-muted-foreground"
-                      >
-                        {notice}
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            )}
-          </div>
+          {agentBubble}
           {!deleted ? messageActionBar : null}
         </div>
       </div>
@@ -3003,6 +3062,7 @@ interface VirtualizedIssueChatThreadListProps {
   stoppingRunId?: string | null;
   interruptingQueuedRunId?: string | null;
   variant: "full" | "embedded";
+  presentation?: "default" | "conversation";
 }
 
 interface VirtualizedIssueChatThreadListHandle {
@@ -3267,6 +3327,7 @@ const VirtualizedIssueChatThreadListInner = forwardRef<
   stoppingRunId,
   interruptingQueuedRunId,
   variant,
+  presentation = "default",
   mode,
   probeRef,
 }, ref) {
@@ -3297,7 +3358,7 @@ const VirtualizedIssueChatThreadListInner = forwardRef<
     };
   }, [mode]);
 
-  const gap = variant === "embedded"
+  const gap = variant === "embedded" && presentation !== "conversation"
     ? VIRTUALIZED_THREAD_GAP_EMBEDDED_PX
     : VIRTUALIZED_THREAD_GAP_FULL_PX;
 
@@ -4235,6 +4296,7 @@ export function IssueChatThread({
   emptyMessage,
   footer,
   variant = "full",
+  presentation = "default",
   enableLiveTranscriptPolling = true,
   transcriptsByRunId,
   hasOutputForRun: hasOutputForRunOverride,
@@ -4814,6 +4876,7 @@ export function IssueChatThread({
       successfulRunHandoff,
       externalReferences,
       linkCaseReferences,
+      presentation,
     }),
     [
       feedbackDataSharingPreference,
@@ -4822,6 +4885,7 @@ export function IssueChatThread({
       currentUserId,
       userLabelMap,
       userProfileMap,
+      presentation,
       stableOnVote,
       stableOnStopRun,
       stopRunLabel,
@@ -4845,7 +4909,9 @@ export function IssueChatThread({
     ],
   );
 
-  const resolvedShowJumpToLatest = showJumpToLatest ?? variant === "full";
+  const isConversation = presentation === "conversation";
+  const turnGapClass = variant === "embedded" && !isConversation ? "space-y-3" : "space-y-4";
+  const resolvedShowJumpToLatest = showJumpToLatest ?? (variant === "full" || isConversation);
   const resolvedEmptyMessage = emptyMessage
     ?? (variant === "embedded"
       ? "No run output yet."
@@ -4861,9 +4927,9 @@ export function IssueChatThread({
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <IssueChatCtx.Provider value={chatCtx}>
-      <div className={cn(variant === "embedded" ? "space-y-3" : "space-y-4")}>
+      <div className={cn(turnGapClass, isConversation && "flex min-h-0 flex-1 flex-col")}>
         {resolvedShowJumpToLatest ? (
-          <div className="flex justify-end">
+          <div className="flex justify-end px-1">
             <button
               type="button"
               onClick={handleJumpToLatest}
@@ -4881,17 +4947,22 @@ export function IssueChatThread({
           variant={variant}
           externalReferences={externalReferences}
         >
-          <div data-testid="thread-root">
+          <div data-testid="thread-root" className={cn(isConversation && "min-h-0 flex-1")}>
             <div
               data-testid="thread-viewport"
-              className={variant === "embedded" ? "space-y-3" : "space-y-4"}
+              className={cn(
+                turnGapClass,
+                isConversation && "px-3 pb-2 sm:px-4",
+              )}
             >
               {messages.length === 0 ? (
                 <Card className={cn(
                   "block shadow-none text-center text-sm text-muted-foreground",
-                  variant === "embedded"
-                    ? "border-dashed border-border/70 bg-background/60 px-4 py-6"
-                    : "border-dashed px-6 py-10",
+                  isConversation
+                    ? "border-dashed border-border/60 bg-muted/20 px-6 py-12"
+                    : variant === "embedded"
+                      ? "border-dashed border-border/70 bg-background/60 px-4 py-6"
+                      : "border-dashed px-6 py-10",
                 )}>
                   {resolvedEmptyMessage}
                 </Card>
@@ -4904,6 +4975,7 @@ export function IssueChatThread({
                   stoppingRunId={stoppingRunId}
                   interruptingQueuedRunId={interruptingQueuedRunId}
                   variant={variant}
+                  presentation={presentation}
                 />
               ) : (
                 // Keep transcript rendering independent from assistant-ui's
@@ -5016,8 +5088,23 @@ export function IssueChatThread({
           <div
             ref={composerViewportAnchorRef}
             data-testid="issue-chat-composer-dock"
-            className="sticky bottom-(--sz-calc-8) z-20 space-y-2 bg-gradient-to-t from-background via-background/95 to-background/0 pt-6"
+            className={cn(
+              "sticky bottom-(--sz-calc-8) z-20 space-y-2 bg-gradient-to-t pt-6",
+              isConversation
+                ? "border-t border-border/60 from-background via-background to-background/90 px-3 pb-3 sm:px-4"
+                : "from-background via-background/95 to-background/0",
+            )}
           >
+            {isConversation ? (
+              <div className="flex items-center justify-between gap-2 px-0.5">
+                <span className="text-(length:--text-micro) font-medium uppercase tracking-(--tracking-eyebrow) text-muted-foreground">
+                  Your message
+                </span>
+                <span className="text-(length:--text-micro) text-muted-foreground/80">
+                  You right · agent left
+                </span>
+              </div>
+            ) : null}
             <IssueChatComposer
               ref={composerRef}
               onImageUpload={imageUploadHandler}
