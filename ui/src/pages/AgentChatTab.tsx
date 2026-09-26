@@ -428,7 +428,7 @@ export function AgentChatTab({
                   Your message
                 </span>
                 <span className="text-(length:--text-micro) text-muted-foreground/80">
-                  Replies appear on the right
+                  You right · agent left
                 </span>
               </div>
               {bootstrapError ? (
