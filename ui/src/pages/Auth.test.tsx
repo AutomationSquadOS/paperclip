@@ -22,8 +22,8 @@ vi.mock("../api/auth", () => ({
 
 // The ASCII art animation drives a canvas/requestAnimationFrame loop that adds
 // nothing to these assertions, so stub it out.
-vi.mock("@/components/AsciiArtAnimation", () => ({
-  AsciiArtAnimation: () => null,
+vi.mock("@/components/OnboardingShowcase", () => ({
+  OnboardingShowcase: () => null,
 }));
 
 // The auth page renders a ThemeToggle, which reads ThemeContext. The provider
