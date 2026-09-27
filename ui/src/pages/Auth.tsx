@@ -5,7 +5,7 @@ import { authApi } from "../api/auth";
 import { queryKeys } from "../lib/queryKeys";
 import { getRememberedInvitePath } from "../lib/invite-memory";
 import { Button } from "@/components/ui/button";
-import { AsciiArtAnimation } from "@/components/AsciiArtAnimation";
+import { OnboardingShowcase } from "@/components/OnboardingShowcase";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Sparkles } from "lucide-react";
 
@@ -83,15 +83,17 @@ export function AuthPage() {
       {/* Left half — form */}
       <div className="w-full md:w-1/2 flex flex-col overflow-y-auto">
         <div className="w-full max-w-md mx-auto my-auto px-8 py-12">
-          <div className="flex items-center gap-2 mb-8">
-            <Sparkles className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Paperclip</span>
+          <div className="flex items-center gap-2 mb-10">
+            <span className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <Sparkles className="h-4 w-4" />
+            </span>
+            <span className="text-sm font-semibold">Paperclip</span>
           </div>
 
-          <h1 className="text-xl font-semibold">
+          <h1 className="font-display text-4xl leading-tight">
             {mode === "sign_in" ? "Sign in to Paperclip" : "Create your Paperclip account"}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-2 text-sm text-muted-foreground">
             {mode === "sign_in"
               ? "Use your email and password to access this instance."
               : "Create an account for this instance. Email confirmation is not required in v1."}
@@ -117,7 +119,7 @@ export function AuthPage() {
                 <input
                   id="name"
                   name="name"
-                  className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                  className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   autoComplete="name"
@@ -134,7 +136,7 @@ export function AuthPage() {
               <input
                 id="email"
                 name="email"
-                className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50"
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
@@ -151,7 +153,7 @@ export function AuthPage() {
               <input
                 id="password"
                 name="password"
-                className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50"
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
@@ -171,7 +173,7 @@ export function AuthPage() {
               type="submit"
               disabled={mutation.isPending}
               aria-disabled={!canSubmit || mutation.isPending}
-              className={`w-full ${!canSubmit && !mutation.isPending ? "opacity-50" : ""}`}
+              className={`h-11 w-full ${!canSubmit && !mutation.isPending ? "opacity-50" : ""}`}
             >
               {mutation.isPending
                 ? "Working…"
@@ -198,8 +200,8 @@ export function AuthPage() {
       </div>
 
       {/* Right half — ASCII art animation (hidden on mobile) */}
-      <div className="hidden md:block w-1/2 overflow-hidden">
-        <AsciiArtAnimation />
+      <div className="hidden md:block w-1/2 overflow-hidden border-l">
+        <OnboardingShowcase />
       </div>
     </div>
   );
