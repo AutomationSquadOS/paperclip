@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: paperclip
       POSTGRES_PASSWORD: paperclip
@@ -17,6 +18,8 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
+      target: production
+    restart: unless-stopped
     ports:
       - "3100:3100"
     environment:
