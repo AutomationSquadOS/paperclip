@@ -79,8 +79,7 @@ describe("ThemeContext", () => {
     document.body.innerHTML = "";
   });
 
-  it("follows OS prefers-color-scheme changes while no explicit choice has been made", () => {
-    document.documentElement.classList.add("dark");
+  it("keeps the document theme and ignores OS changes while no explicit choice has been made", () => {
     const mql = installMatchMedia(true);
 
     const root = createRoot(container);
@@ -92,21 +91,14 @@ describe("ThemeContext", () => {
       );
     });
 
-    expect(observedTheme).toBe("dark");
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
-    expect(mql.listenerCount()).toBe(1);
-
-    act(() => {
-      mql.dispatch(false);
-    });
     expect(observedTheme).toBe("light");
     expect(document.documentElement.classList.contains("dark")).toBe(false);
-    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
+    expect(mql.listenerCount()).toBe(0);
 
     act(() => {
       mql.dispatch(true);
     });
-    expect(observedTheme).toBe("dark");
+    expect(observedTheme).toBe("light");
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
 
     act(() => {
@@ -114,9 +106,8 @@ describe("ThemeContext", () => {
     });
   });
 
-  it("stops listening to OS changes after the user makes an explicit choice", () => {
-    document.documentElement.classList.add("dark");
-    const mql = installMatchMedia(true);
+  it("persists an explicit choice and toggles between themes", () => {
+    installMatchMedia(false);
 
     const root = createRoot(container);
     act(() => {
@@ -127,25 +118,18 @@ describe("ThemeContext", () => {
       );
     });
 
-    expect(mql.listenerCount()).toBe(1);
-
     act(() => {
-      setTheme?.("light");
+      setTheme?.("dark");
     });
-    expect(observedTheme).toBe("light");
-    expect(mql.listenerCount()).toBe(0);
-    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("light");
-
-    act(() => {
-      mql.dispatch(true);
-    });
-    expect(observedTheme).toBe("light");
+    expect(observedTheme).toBe("dark");
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("dark");
 
     act(() => {
       toggleTheme?.();
     });
-    expect(observedTheme).toBe("dark");
-    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("dark");
+    expect(observedTheme).toBe("light");
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("light");
 
     act(() => {
       root.unmount();

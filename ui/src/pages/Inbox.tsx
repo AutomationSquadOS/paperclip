@@ -531,16 +531,16 @@ function ApprovalInboxRow({
           <div className="hidden shrink-0 items-center gap-2 sm:flex">
             <Button
               size="sm"
-              className="h-8 bg-green-700 px-3 text-white hover:bg-green-600"
+              className="h-8 rounded-full px-4"
               onClick={onApprove}
               disabled={isPending}
             >
               Approve
             </Button>
             <Button
-              variant="destructive"
+              variant="outline"
               size="sm"
-              className="h-8 px-3"
+              className="h-8 rounded-full px-4"
               onClick={onReject}
               disabled={isPending}
             >
@@ -553,16 +553,16 @@ function ApprovalInboxRow({
         <div className="mt-3 flex gap-2 sm:hidden">
           <Button
             size="sm"
-            className="h-8 bg-green-700 px-3 text-white hover:bg-green-600"
+            className="h-8 rounded-full px-4"
             onClick={onApprove}
             disabled={isPending}
           >
             Approve
           </Button>
           <Button
-            variant="destructive"
+            variant="outline"
             size="sm"
-            className="h-8 px-3"
+            className="h-8 rounded-full px-4"
             onClick={onReject}
             disabled={isPending}
           >
@@ -659,16 +659,16 @@ function JoinRequestInboxRow({
         <div className="hidden shrink-0 items-center gap-2 sm:flex">
           <Button
             size="sm"
-            className="h-8 bg-green-700 px-3 text-white hover:bg-green-600"
+            className="h-8 rounded-full px-4"
             onClick={onApprove}
             disabled={isPending}
           >
             Approve
           </Button>
           <Button
-            variant="destructive"
+            variant="outline"
             size="sm"
-            className="h-8 px-3"
+            className="h-8 rounded-full px-4"
             onClick={onReject}
             disabled={isPending}
           >
@@ -679,16 +679,16 @@ function JoinRequestInboxRow({
       <div className="mt-3 flex gap-2 sm:hidden">
         <Button
           size="sm"
-          className="h-8 bg-green-700 px-3 text-white hover:bg-green-600"
+          className="h-8 rounded-full px-4"
           onClick={onApprove}
           disabled={isPending}
         >
           Approve
         </Button>
         <Button
-          variant="destructive"
+          variant="outline"
           size="sm"
-          className="h-8 px-3"
+          className="h-8 rounded-full px-4"
           onClick={onReject}
           disabled={isPending}
         >
@@ -2179,6 +2179,10 @@ export function Inbox() {
   const showGeneralIssueToolbarControls = tab !== "blocked";
   return (
     <div className="space-y-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="font-display text-3xl leading-tight md:text-4xl">Inbox</h1>
+        <p className="text-sm text-muted-foreground">Updates from your agents, and anything waiting on you.</p>
+      </div>
       <InboxWaitingStrip dashboard={dashboard} />
       <div className="space-y-2">
         {/* Search — full-width row on mobile, inline on desktop */}
@@ -2530,14 +2534,21 @@ export function Inbox() {
           icon={searchQuery.trim() ? Search : InboxIcon}
           message={
             searchQuery.trim()
-              ? "No inbox items match your search."
+              ? "Nothing matches your search."
               : tab === "mine"
-              ? "Inbox zero."
+              ? "You're all caught up."
               : tab === "unread"
-              ? "No new inbox items."
+              ? "No new updates."
               : tab === "recent"
-                ? "No recent inbox items."
-                : "No inbox items match these filters."
+                ? "Nothing recent yet."
+                : "Nothing matches these filters."
+          }
+          description={
+            searchQuery.trim()
+              ? "Try a different word, or clear the search."
+              : tab === "mine" || tab === "unread" || tab === "recent"
+                ? "When an agent finishes work or needs a decision, it will land here."
+                : "Try removing a filter to see more."
           }
         />
       )}
@@ -2546,7 +2557,7 @@ export function Inbox() {
         <>
           {showSeparatorBefore("work_items") && <Separator />}
           <div>
-            <div ref={listRef} className="overflow-hidden">
+            <div ref={listRef} className="overflow-hidden rounded-2xl border bg-card py-1 shadow-xs">
               {(() => {
                 const renderInboxIssue = ({
                   issue,
@@ -2709,15 +2720,16 @@ export function Inbox() {
                   const isGroupCollapsed = collapsedGroupKeys.has(group.key);
                   if (
                     group.searchSection !== "none"
+                    && group.displayItems.length > 0
                     && group.searchSection !== groupedSections[groupIndex - 1]?.searchSection
                   ) {
                     elements.push(
                       <div
                         key={`${group.searchSection}-search-divider`}
-                        className="flex items-center gap-3 border-y border-border/70 bg-muted/30 px-4 py-2"
+                        className="flex items-center gap-3 px-4 py-3"
                       >
-                        <div className="h-px flex-1 bg-border/80" />
-                        <span className="shrink-0 text-(length:--text-micro) font-semibold uppercase tracking-wide text-muted-foreground">
+                        <div className="h-px flex-1 bg-border/70" />
+                        <span className="shrink-0 text-xs font-medium text-muted-foreground">
                           {group.searchSection === "archived" ? "Archived" : "Other results"}
                         </span>
                         <div className="h-px flex-1 bg-border/80" />

@@ -451,7 +451,7 @@ export function Agents() {
                 <AgentActionButtons
                   agent={agent}
                   companyId={selectedCompanyId}
-                  runLabel="Run Heartbeat"
+                  runLabel="Run now"
                   showStatus={false}
                 />
               </div>
@@ -493,7 +493,11 @@ export function Agents() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      <div className="flex flex-col gap-1">
+        <h1 className="font-display text-3xl leading-tight md:text-4xl">Agents</h1>
+        <p className="text-sm text-muted-foreground">Your AI teammates. Open one to chat, give it instructions, or see its work.</p>
+      </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Tabs value={tab} onValueChange={(v) => navigate(`/agents/${v}`)}>
           <PageTabBar
@@ -505,7 +509,7 @@ export function Agents() {
         <div className="flex items-center gap-2">
           {/* View toggle */}
           {!forceListView && (
-            <div className="flex items-center border border-border" role="group" aria-label="View mode">
+            <div className="flex items-center overflow-hidden rounded-lg border border-border bg-card" role="group" aria-label="View mode">
               <button
                 className={cn(
                   "p-1.5 transition-colors",
@@ -532,9 +536,9 @@ export function Agents() {
               </button>
             </div>
           )}
-          <Button size="sm" variant="outline" onClick={openNewAgent}>
+          <Button size="sm" onClick={openNewAgent}>
             <Plus className="h-3.5 w-3.5 mr-1.5" />
-            New Agent
+            New agent
           </Button>
         </div>
       </div>
@@ -548,15 +552,16 @@ export function Agents() {
       {agents && agents.length === 0 && (
         <EmptyState
           icon={Bot}
-          message="Create your first agent to get started."
-          action="New Agent"
+          title="No agents yet"
+          message="Agents are AI teammates that take on tasks for you: research, writing, coding, and more."
+          action="Hire your first agent"
           onAction={openNewAgent}
         />
       )}
 
       {/* List view */}
       {effectiveView === "list" && filtered.length > 0 && (
-        <div>
+        <div className="overflow-hidden rounded-2xl border bg-card py-1 shadow-xs">
           {filtered.map(renderAgentRow)}
         </div>
       )}
@@ -569,7 +574,7 @@ export function Agents() {
 
       {/* Org chart view */}
       {effectiveView === "org" && filteredOrg.length > 0 && (
-        <div className="py-1">
+        <div className="overflow-hidden rounded-2xl border bg-card py-2 shadow-xs">
           {filteredOrg.map((node) => (
             <OrgTreeNode
               key={node.id}

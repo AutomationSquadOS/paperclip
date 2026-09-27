@@ -265,17 +265,16 @@ export function AgentChatTab({
     <div className="flex min-h-(--sz-28rem) flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-sm font-medium text-foreground">Chat with {agent.name}</h2>
-          <p className="text-xs text-muted-foreground">
-            Messages are stored on a standing conversation issue and wake this agent through the
-            normal task path. The agent can create or link tasks from the thread.
+          <h2 className="text-base font-semibold text-foreground">Chat with {agent.name}</h2>
+          <p className="text-sm text-muted-foreground">
+            Ask a question or give quick instructions. {agent.name} replies here and can turn requests into tasks.
           </p>
         </div>
         {issue ? (
           <Button asChild size="sm" variant="outline">
             <Link to={`/issues/${issue.identifier ?? issue.id}`}>
               <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-              {issue.identifier ?? "Open issue"}
+              {issue.identifier ?? "Open task"}
             </Link>
           </Button>
         ) : null}
@@ -288,7 +287,7 @@ export function AgentChatTab({
       ) : null}
 
       {issue ? (
-        <div className="min-h-0 flex-1 rounded-md border border-border">
+        <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
           <IssueChatThread
             comments={comments}
             interactions={interactions}
@@ -312,12 +311,12 @@ export function AgentChatTab({
             userProfileMap={userProfileMap}
             draftKey={`paperclip:agent-chat-draft:${issue.id}`}
             autoScrollToLatestOnInitialLoad
-            emptyMessage="No messages yet. Send a note to wake this agent."
+            emptyMessage={`No messages yet. Say hello to ${agent.name}.`}
             composerDisabledReason={hardDisabledReason}
             composerHint={
               hardDisabledReason
                 ? null
-                : "Send wakes this agent on the conversation issue. Ask it to create or reference tasks when useful."
+                : `${agent.name} gets your message right away. Ask for a task when you want tracked work.`
             }
             onAdd={handleAdd}
             onVote={handleVote}
@@ -342,22 +341,22 @@ export function AgentChatTab({
           />
         </div>
       ) : (
-        <div className="flex flex-1 flex-col justify-end gap-3 rounded-md border border-border p-4">
+        <div className="flex flex-1 flex-col justify-end gap-3 rounded-2xl border border-border bg-card p-4 shadow-xs">
           <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-center text-sm text-muted-foreground">
-            <MessageSquare className="h-8 w-8 opacity-50" />
-            <p>No standing conversation yet.</p>
-            <p className="max-w-md text-xs">
-              The first message creates a hidden conversation issue assigned to this agent,
-              labeled <code className="text-foreground">agent-chat</code>, then wakes the agent.
+            <span className="mb-1 flex size-14 items-center justify-center rounded-2xl bg-brand-soft text-brand-soft-foreground">
+              <MessageSquare className="h-6 w-6" />
+            </span>
+            <p className="text-base font-semibold text-foreground">Start a conversation with {agent.name}</p>
+            <p className="max-w-md text-sm">
+              Chat is the quickest way to ask questions or hand off small jobs.
             </p>
             {!hardDisabledReason ? (
               <Button
                 size="sm"
-                variant="outline"
                 disabled={ensureChat.isPending}
                 onClick={() => ensureChat.mutate()}
               >
-                {ensureChat.isPending ? "Preparing…" : "Prepare conversation"}
+                {ensureChat.isPending ? "Starting…" : "Start chatting"}
               </Button>
             ) : null}
           </div>

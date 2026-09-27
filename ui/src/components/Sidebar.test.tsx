@@ -205,10 +205,11 @@ describe("Sidebar", () => {
     });
     const root = await renderSidebar();
 
-    expect(container.textContent).toContain("New Task");
+    expect(container.textContent).toContain("New task");
     expect(container.textContent).not.toContain("New Issue");
 
     const navLabels = [...container.querySelectorAll("nav a")].map((a) => a.textContent?.trim());
+    expect(navLabels[0]).toBe("Home");
     expect(navLabels).toContain("Tasks");
     expect(navLabels).not.toContain("Issues");
 

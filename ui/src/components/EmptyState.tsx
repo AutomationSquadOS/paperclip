@@ -25,23 +25,26 @@ export function EmptyState({
   hideActionIcon = false,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="bg-muted/50 p-4 mb-4">
-        <Icon className="h-10 w-10 text-muted-foreground/50" />
+    <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in">
+      <div className="relative mb-5 flex size-(--size-illustration) items-center justify-center">
+        <span aria-hidden="true" className="absolute inset-0 rounded-full bg-brand-soft opacity-60 blur-2xl" />
+        <span className="relative flex size-16 items-center justify-center rounded-2xl border bg-card text-brand-soft-foreground shadow-md">
+          <Icon className="h-7 w-7" />
+        </span>
       </div>
       {title ? (
         <>
-          <p className="text-base font-semibold text-foreground mb-1.5">{title}</p>
-          <p className="text-sm text-muted-foreground mb-4 max-w-md">{message}</p>
+          <p className="text-lg font-semibold text-foreground mb-1.5">{title}</p>
+          <p className="text-sm text-muted-foreground mb-5 max-w-md">{message}</p>
         </>
       ) : (
         <>
-          <p className="text-sm font-medium text-foreground mb-1">{message}</p>
-          {description && <p className="max-w-md text-sm text-muted-foreground mb-4">{description}</p>}
+          <p className="text-base font-semibold text-foreground mb-1">{message}</p>
+          {description && <p className="max-w-md text-sm text-muted-foreground mb-5">{description}</p>}
         </>
       )}
       {action && onAction && (
-        <Button onClick={onAction}>
+        <Button onClick={onAction} className="rounded-full px-5">
           {!hideActionIcon && <Plus className="h-4 w-4 mr-1.5" />}
           {action}
         </Button>

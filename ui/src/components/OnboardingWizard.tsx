@@ -44,7 +44,7 @@ import { DEFAULT_CURSOR_LOCAL_MODEL } from "@paperclipai/adapter-cursor-local";
 import { DEFAULT_GEMINI_LOCAL_MODEL } from "@paperclipai/adapter-gemini-local";
 import { DEFAULT_OPENCODE_LOCAL_MODEL, isValidOpenCodeModelId } from "@paperclipai/adapter-opencode-local";
 import { resolveRouteOnboardingOptions } from "../lib/onboarding-route";
-import { AsciiArtAnimation } from "./AsciiArtAnimation";
+import { OnboardingShowcase } from "./OnboardingShowcase";
 import { FrontDoor } from "./FrontDoor";
 import { AgentCapsule } from "./AgentCapsule";
 import { Badge } from "@/components/ui/badge";
@@ -812,8 +812,8 @@ export function OnboardingWizard() {
                       disabled={!canJump}
                       onClick={() => canJump && setStep(s as Step)}
                       className={cn(
-                        "h-1 flex-1 rounded-full transition-colors",
-                        filled ? "bg-foreground" : "bg-muted",
+                        "h-1.5 flex-1 rounded-full transition-colors",
+                        filled ? "bg-primary" : "bg-muted",
                         canJump ? "cursor-pointer" : "cursor-default"
                       )}
                     />
@@ -828,15 +828,15 @@ export function OnboardingWizard() {
               {step >= 3 && step <= 5 && (
                 <div className="space-y-4 mb-6">
                   <div className="flex items-center gap-3 mb-1">
-                    <div className="bg-muted/50 p-2">
+                    <div className="rounded-xl bg-brand-soft p-2.5 text-brand-soft-foreground">
                       {step === 5 ? (
-                        <Check className="h-5 w-5 text-muted-foreground" />
+                        <Check className="h-5 w-5" />
                       ) : (
-                        <Bot className="h-5 w-5 text-muted-foreground" />
+                        <Bot className="h-5 w-5" />
                       )}
                     </div>
                     <div>
-                      <h3 className="font-medium">
+                      <h3 className="text-lg font-semibold tracking-tight">
                         {step === 3
                           ? "Create your team lead"
                           : step === 4
@@ -888,11 +888,11 @@ export function OnboardingWizard() {
               {step === 2 && onboardingPath === "grow" && (
                 <div className="space-y-5">
                   <div className="flex items-center gap-3 mb-1">
-                    <div className="bg-muted/50 p-2">
-                      <Sparkles className="h-5 w-5 text-muted-foreground" />
+                    <div className="rounded-xl bg-brand-soft p-2.5 text-brand-soft-foreground">
+                      <Sparkles className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Tell us about your team</h3>
+                      <h3 className="text-lg font-semibold tracking-tight">Tell us about your team</h3>
                       <p className="text-xs text-muted-foreground">
                         We'll use this to set up your lead agent and plan which agents to add.
                       </p>
@@ -901,7 +901,7 @@ export function OnboardingWizard() {
                   <div className="group">
                     <label className="text-xs text-muted-foreground mb-1 block">What does your team work on?</label>
                     <input
-                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                      className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50"
                       placeholder="e.g. We create educational YouTube content about AI"
                       value={q1}
                       onChange={(e) => setQ1(e.target.value)}
@@ -910,7 +910,7 @@ export function OnboardingWizard() {
                   <div className="group">
                     <label className="text-xs text-muted-foreground mb-1 block">What are your current workflows?</label>
                     <textarea
-                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 resize-none min-h-(--sz-60px)"
+                      className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50 resize-none min-h-(--sz-60px)"
                       placeholder="e.g. Manual content creation, spreadsheet tracking, email outreach"
                       value={growWorkflows}
                       onChange={(e) => setGrowWorkflows(e.target.value)}
@@ -919,7 +919,7 @@ export function OnboardingWizard() {
                   <div className="group">
                     <label className="text-xs text-muted-foreground mb-1 block">What pain points would you solve with AI?</label>
                     <textarea
-                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 resize-none min-h-(--sz-60px)"
+                      className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50 resize-none min-h-(--sz-60px)"
                       placeholder="e.g. Can't produce content fast enough, no time for social media"
                       value={growPainPoints}
                       onChange={(e) => setGrowPainPoints(e.target.value)}
@@ -928,7 +928,7 @@ export function OnboardingWizard() {
                   <div className="group">
                     <label className="text-xs text-muted-foreground mb-1 block">What would you automate first?</label>
                     <input
-                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                      className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50"
                       placeholder="e.g. Social media scheduling and content repurposing"
                       value={growAutomate}
                       onChange={(e) => setGrowAutomate(e.target.value)}
@@ -954,7 +954,7 @@ export function OnboardingWizard() {
                         <div className="group">
                           <label className="text-xs text-foreground mb-1 block">Generated mission — edit however you like:</label>
                           <textarea
-                            className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 resize-none min-h-(--sz-60px)"
+                            className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50 resize-none min-h-(--sz-60px)"
                             value={companyGoal}
                             onChange={(e) => setCompanyGoal(e.target.value)}
                           />
@@ -975,11 +975,11 @@ export function OnboardingWizard() {
               {step === 1 && (
                 <div className="space-y-5">
                   <div className="flex items-center gap-3 mb-1">
-                    <div className="bg-muted/50 p-2">
-                      <Building2 className="h-5 w-5 text-muted-foreground" />
+                    <div className="rounded-xl bg-brand-soft p-2.5 text-brand-soft-foreground">
+                      <Building2 className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Name your company</h3>
+                      <h3 className="text-lg font-semibold tracking-tight">Name your company</h3>
                       <p className="text-xs text-muted-foreground">
                         What should we call your company?
                       </p>
@@ -997,7 +997,7 @@ export function OnboardingWizard() {
                       Company name
                     </label>
                     <input
-                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                      className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50"
                       placeholder="Acme Corp"
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
@@ -1024,11 +1024,11 @@ export function OnboardingWizard() {
               {step === 2 && onboardingPath !== "grow" && (
                 <div className="space-y-5">
                   <div className="flex items-center gap-3 mb-1">
-                    <div className="bg-muted/50 p-2">
-                      <Building2 className="h-5 w-5 text-muted-foreground" />
+                    <div className="rounded-xl bg-brand-soft p-2.5 text-brand-soft-foreground">
+                      <Building2 className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Define your mission</h3>
+                      <h3 className="text-lg font-semibold tracking-tight">Define your mission</h3>
                       <p className="text-xs text-muted-foreground">
                         Your mission guides everything — your lead agent, who you bring on, and the work <strong>{companyName}</strong> takes on.
                       </p>
@@ -1089,7 +1089,7 @@ export function OnboardingWizard() {
                           Mission
                         </label>
                         <textarea
-                          className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 resize-none min-h-(--sz-60px)"
+                          className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50 resize-none min-h-(--sz-60px)"
                           placeholder="What is your team trying to achieve?"
                           value={companyGoal}
                           onChange={(e) => setCompanyGoal(e.target.value)}
@@ -1124,7 +1124,7 @@ export function OnboardingWizard() {
                           What does your team work on?
                         </label>
                         <input
-                          className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                          className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50"
                           placeholder="e.g. We create educational YouTube content about AI"
                           value={q1}
                           onChange={(e) => setQ1(e.target.value)}
@@ -1136,7 +1136,7 @@ export function OnboardingWizard() {
                           Who do you serve?
                         </label>
                         <input
-                          className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                          className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50"
                           placeholder="e.g. Non-technical professionals curious about AI tools"
                           value={q2}
                           onChange={(e) => setQ2(e.target.value)}
@@ -1147,7 +1147,7 @@ export function OnboardingWizard() {
                           What's your biggest bottleneck right now?
                         </label>
                         <input
-                          className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                          className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50"
                           placeholder="e.g. Can't produce content fast enough across multiple channels"
                           value={q3}
                           onChange={(e) => setQ3(e.target.value)}
@@ -1158,7 +1158,7 @@ export function OnboardingWizard() {
                           What would success look like in 6 months?
                         </label>
                         <input
-                          className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                          className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50"
                           placeholder="e.g. Publishing daily content across 4 platforms with a team of AI agents"
                           value={q4}
                           onChange={(e) => setQ4(e.target.value)}
@@ -1187,7 +1187,7 @@ export function OnboardingWizard() {
                           Here's your draft mission — edit it however you like:
                         </label>
                         <textarea
-                          className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 resize-none min-h-(--sz-80px)"
+                          className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50 resize-none min-h-(--sz-80px)"
                           value={companyGoal}
                           onChange={(e) => setCompanyGoal(e.target.value)}
                           autoFocus
@@ -1226,7 +1226,7 @@ export function OnboardingWizard() {
                       Name
                     </label>
                     <input
-                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                      className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm shadow-xs outline-none transition-shadow focus:border-ring/60 focus:ring-4 focus:ring-ring/15 placeholder:text-muted-foreground/50"
                       placeholder="Chief of staff"
                       value={agentName}
                       onChange={(e) => setAgentName(e.target.value)}
@@ -1724,15 +1724,15 @@ export function OnboardingWizard() {
           </div>
           )}
 
-          {/* Right half — ASCII art (hidden on mobile, only for the team
-              name + mission steps) */}
+          {/* Right half — product preview (hidden on mobile, only for the
+              team name + mission steps) */}
           <div
             className={cn(
-              "hidden md:block overflow-hidden bg-(--hex-1d1d1d) transition-(--tp-width-opacity) duration-500 ease-in-out",
+              "hidden md:block overflow-hidden border-l transition-(--tp-width-opacity) duration-500 ease-in-out",
               step === 1 || step === 2 ? "w-1/2 opacity-100" : "w-0 opacity-0"
             )}
           >
-            <AsciiArtAnimation />
+            <OnboardingShowcase />
           </div>
         </div>
       </DialogPortal>

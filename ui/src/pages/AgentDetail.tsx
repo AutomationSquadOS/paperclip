@@ -1190,7 +1190,7 @@ export function AgentDetail() {
             companyId={resolvedCompanyId}
             assignLabel="Assign a task"
             emphasizeAssign={!headerLiveRun}
-            runLabel="Run Heartbeat"
+            runLabel="Run now"
             actionsDisabled={agentAction.isPending}
             workActionsDisabled={hasInvalidOrgChain}
             workActionsDisabledReason="Repair this agent's reporting chain before assigning tasks or starting runs"

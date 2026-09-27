@@ -1559,8 +1559,8 @@ export function IssuesList({
     viewState.groupBy,
   ]);
 
-  const createActionLabel = createIssueLabel ? `Create ${createIssueLabel}` : "Create Task";
-  const createButtonLabel = createIssueLabel ? `New ${createIssueLabel}` : "New Task";
+  const createActionLabel = createIssueLabel ? `Create ${createIssueLabel}` : "Create task";
+  const createButtonLabel = createIssueLabel ? `New ${createIssueLabel}` : "New task";
   const openCreateIssueDialog = useCallback((group?: { key: string; items: Issue[] }) => {
     openNewIssue(newIssueDefaults(group));
   }, [newIssueDefaults, openNewIssue]);
@@ -1604,7 +1604,7 @@ export function IssuesList({
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-2 sm:gap-3">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <Button size="sm" variant="outline" onClick={() => openCreateIssueDialog()}>
+          <Button size="sm" onClick={() => openCreateIssueDialog()}>
             <Plus className="h-4 w-4 sm:mr-1" />
             <span className="hidden sm:inline">{createButtonLabel}</span>
           </Button>
@@ -1869,7 +1869,7 @@ export function IssuesList({
           onUpdateIssue={onUpdateIssue}
         />
       ) : (
-        <>
+        <div className={cn(filtered.length > 0 && "overflow-hidden rounded-2xl border bg-card py-1 shadow-xs")}>
           {groupedContent.map((group) => {
           if (remainingRowsToRender <= 0) return null;
           return (
@@ -2259,7 +2259,7 @@ export function IssuesList({
           );
           })}
           {(remainingIssueRowCount > 0 || hasMoreIssues || isLoadingMoreIssues) && (
-            <div className="py-2" data-testid="issues-load-more-sentinel">
+            <div className="px-4 py-2" data-testid="issues-load-more-sentinel">
               <p className="text-xs text-muted-foreground">
                 {isLoadingMoreIssues
                   ? "Loading more tasks..."
@@ -2269,7 +2269,7 @@ export function IssuesList({
               </p>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

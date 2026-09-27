@@ -23,6 +23,7 @@ import {
   GanttChartSquare,
   LayoutGrid,
   ChevronRight,
+  House,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -75,7 +76,7 @@ function SidebarDisclosure({
         aria-expanded={open}
         aria-label={open ? `Collapse ${disclosureLabel}` : `Expand ${disclosureLabel}`}
         onClick={() => onOpenChange(!open)}
-        className="flex items-center gap-2.5 mx-2 rounded-lg px-2 py-1.5 pointer-coarse:py-1 text-(length:--text-compact) font-medium text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+        className="flex items-center gap-3 mx-2 rounded-lg px-2.5 py-1.5 pointer-coarse:py-1 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground transition-colors"
       >
         <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-90")} />
         <span className="truncate">{label}</span>
@@ -148,7 +149,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-full h-full min-h-0 border-r border-border bg-background flex flex-col">
+    <aside className="w-full h-full min-h-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col">
       {/* Top bar: Company name (bold) + Search — aligned with top sections (no visible border) */}
       <div className="flex items-center gap-1 px-3 h-12 shrink-0">
         <SidebarCompanyMenu />
@@ -215,22 +216,23 @@ export function Sidebar() {
               <button
                 onClick={() => openNewIssue()}
                 data-slot="icon-button"
-                aria-label={rail ? "New Task" : undefined}
-                className="flex items-center gap-2.5 mx-2 rounded-lg px-2 py-1.5 pointer-coarse:py-1 text-(length:--text-compact) font-medium text-foreground/80 hover:bg-accent/50 hover:text-foreground transition-colors"
+                aria-label={rail ? "New task" : undefined}
+                className="mb-2 flex items-center gap-3 mx-2 rounded-lg bg-primary px-2.5 py-2 pointer-coarse:py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-(--tp-color-background-color-border-color-box-shadow-opacity) hover:bg-primary/90 hover:shadow-md active:scale-(--s-0_98)"
               >
                 <SquarePen className="h-4 w-4 shrink-0" />
-                <span className={rail ? SIDEBAR_RAIL_HIDDEN_LABEL : "truncate"}>New Task</span>
+                <span className={rail ? SIDEBAR_RAIL_HIDDEN_LABEL : "truncate"}>New task</span>
               </button>
             );
             return rail ? (
               <Tooltip>
                 <TooltipTrigger asChild>{newTaskButton}</TooltipTrigger>
-                <TooltipContent side="right">New Task</TooltipContent>
+                <TooltipContent side="right">New task</TooltipContent>
               </Tooltip>
             ) : (
               newTaskButton
             );
           })()}
+          <SidebarNavItem to="/home" label="Home" icon={House} />
           <SidebarNavItem
             to="/inbox"
             label="Inbox"
@@ -246,7 +248,7 @@ export function Sidebar() {
             open={historyOpen}
             onOpenChange={setHistoryOpen}
           >
-            <SidebarNavItem to="/dashboard" label="Dashboard" icon={LayoutDashboard} liveCount={liveRunCount} />
+            <SidebarNavItem to="/dashboard" label="Overview" icon={LayoutDashboard} liveCount={liveRunCount} />
             {showStatusCards ? (
               <SidebarNavItem to="/status" label="Status" icon={LayoutGrid} textBadge="beta" />
             ) : null}
@@ -313,8 +315,8 @@ export function Sidebar() {
         <SidebarAgents streamlined={streamlined} />
 
         <SidebarSection label="Company" collapsible={{ open: companyOpen, onOpenChange: setCompanyOpen }}>
-          <SidebarNavItem to="/org" label="Org" icon={Network} />
-          <SidebarNavItem to="/costs" label="Costs" icon={DollarSign} />
+          <SidebarNavItem to="/org" label="Org chart" icon={Network} />
+          <SidebarNavItem to="/costs" label="Spending" icon={DollarSign} />
           <SidebarDisclosure
             label="More"
             disclosureLabel="more company"

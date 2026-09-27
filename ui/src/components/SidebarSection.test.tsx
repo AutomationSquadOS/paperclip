@@ -183,7 +183,7 @@ describe("SidebarSection", () => {
       .find((element) => element.textContent === "Settings");
 
     expect(settingsLabel).toBeTruthy();
-    expect(settingsLabel?.getAttribute("class")).toContain("uppercase");
+    expect(settingsLabel?.getAttribute("class")).toContain("font-semibold");
     expect(container.querySelector(".bg-border\\/60")).toBeNull();
   });
 

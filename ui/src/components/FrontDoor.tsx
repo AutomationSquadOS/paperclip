@@ -7,31 +7,32 @@ interface FrontDoorProps {
 
 export function FrontDoor({ onChoose }: FrontDoorProps) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-(--sz-60vh) px-8">
-      <div className="text-center mb-10">
-        <h2 className="text-2xl font-bold tracking-tight">
+    <div className="relative flex flex-col items-center justify-center min-h-dvh px-8 py-12 overflow-hidden">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-(image:--home-hero-glow)" />
+      <div className="relative text-center mb-10 animate-rise-in">
+        <h2 className="font-display text-5xl leading-tight">
           Welcome to Paperclip
         </h2>
-        <p className="text-sm text-muted-foreground mt-2">
-          How would you like to get started?
+        <p className="text-base text-muted-foreground mt-3 max-w-md">
+          Build a team of AI agents that works for you. How would you like to get started?
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg w-full">
+      <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl w-full animate-rise-in">
         <button
           className={cn(
-            "flex flex-col items-center gap-3 rounded-lg border-2 border-border p-6",
-            "hover:border-foreground hover:bg-accent/30 transition-all",
+            "flex flex-col items-center gap-4 rounded-2xl border bg-card p-8 shadow-sm",
+            "hover:-translate-y-0.5 hover:border-ring/50 hover:shadow-lg transition-all",
             "text-center group cursor-pointer",
           )}
           onClick={() => onChoose("create")}
         >
-          <div className="rounded-full bg-muted/50 p-3 group-hover:bg-accent transition-colors">
+          <div className="rounded-2xl bg-brand-soft p-3.5 text-brand-soft-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
             <Rocket className="h-6 w-6" />
           </div>
           <div>
-            <h3 className="font-semibold text-sm">Build a new company</h3>
-            <p className="text-xs text-muted-foreground mt-1">
+            <h3 className="font-semibold text-base">Build a new company</h3>
+            <p className="text-sm text-muted-foreground mt-1.5">
               Begin with a mission, bring on a lead agent, and grow a team of agents to do the work.
             </p>
           </div>
@@ -39,18 +40,18 @@ export function FrontDoor({ onChoose }: FrontDoorProps) {
 
         <button
           className={cn(
-            "flex flex-col items-center gap-3 rounded-lg border-2 border-border p-6",
-            "hover:border-foreground hover:bg-accent/30 transition-all",
+            "flex flex-col items-center gap-4 rounded-2xl border bg-card p-8 shadow-sm",
+            "hover:-translate-y-0.5 hover:border-ring/50 hover:shadow-lg transition-all",
             "text-center group cursor-pointer",
           )}
           onClick={() => onChoose("grow")}
         >
-          <div className="rounded-full bg-muted/50 p-3 group-hover:bg-accent transition-colors">
+          <div className="rounded-2xl bg-brand-soft p-3.5 text-brand-soft-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
             <Zap className="h-6 w-6" />
           </div>
           <div>
-            <h3 className="font-semibold text-sm">Add agents to your org</h3>
-            <p className="text-xs text-muted-foreground mt-1">
+            <h3 className="font-semibold text-base">Add agents to your org</h3>
+            <p className="text-sm text-muted-foreground mt-1.5">
               Bring AI agents into your existing team or workflows.
             </p>
           </div>

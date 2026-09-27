@@ -1,4 +1,5 @@
 import { Navigate, Outlet, Route, Routes, useActiveCompanyPrefix, useLocation, useParams } from "@/lib/router";
+import { AppLoading } from "./components/AppLoading";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/i18n";
 import { Layout } from "./components/Layout";
@@ -12,6 +13,7 @@ import { CaseDetail } from "./pages/CaseDetail";
 import { OnboardingWizardVariant } from "./components/OnboardingWizardVariant";
 import { CloudAccessGate } from "./components/CloudAccessGate";
 import { Dashboard } from "./pages/Dashboard";
+import { Home } from "./pages/Home";
 import { DashboardLive } from "./pages/DashboardLive";
 import { Timeline } from "./pages/Timeline";
 import { Companies } from "./pages/Companies";
@@ -98,7 +100,8 @@ import { normalizeRememberedInstanceSettingsPath } from "./lib/instance-settings
 function boardRoutes() {
   return (
     <>
-      <Route index element={<InboxRootRedirect />} />
+      <Route index element={<Navigate to="/home" replace />} />
+      <Route path="home" element={<Home />} />
       <Route path="dashboard" element={<Dashboard />} />
       <Route path="dashboard/live" element={<DashboardLive />} />
       <Route path="timeline" element={<Timeline />} />
@@ -331,7 +334,7 @@ function LegacySettingsRedirect() {
   const { companyPrefix } = useParams<{ companyPrefix?: string }>();
 
   if (loading) {
-    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
+    return <AppLoading />;
   }
 
   const targetCompany =
@@ -439,7 +442,7 @@ function CompanyRootRedirect() {
   const location = useLocation();
 
   if (loading) {
-    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
+    return <AppLoading />;
   }
 
   const targetCompany = selectedCompany ?? companies[0] ?? null;
@@ -455,7 +458,7 @@ function CompanyRootRedirect() {
     return <NoCompaniesStartPage />;
   }
 
-  return <Navigate to={`/${targetCompany.issuePrefix}/inbox/${loadLastInboxTab()}`} replace />;
+  return <Navigate to={`/${targetCompany.issuePrefix}/home`} replace />;
 }
 
 function StatusCardsLegacyRedirect() {
@@ -470,7 +473,7 @@ function UnprefixedBoardRedirect() {
   const { companies, selectedCompany, loading } = useCompany();
 
   if (loading) {
-    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
+    return <AppLoading />;
   }
 
   const targetCompany = selectedCompany ?? companies[0] ?? null;
