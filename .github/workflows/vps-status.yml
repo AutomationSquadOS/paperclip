@@ -1,0 +1,36 @@
+name: VPS status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read Hostinger project state
+        env:
+          HOSTINGER_API_KEY: ${{ secrets.HOSTINGER_API_KEY }}
+        run: |
+          set -euo pipefail
+          auth=( -H "Authorization: Bearer ${HOSTINGER_API_KEY}" -H "Accept: application/json" )
+          base="https://developers.hostinger.com/api/vps/v1/virtual-machines/1451461"
+
+          echo "=== projects ==="
+          code=$(curl -sS --connect-timeout 20 --max-time 90 -w '%{http_code}' -o /tmp/projects.json "${auth[@]}" "$base/docker" || true)
+          echo "http ${code}"
+          jq 'if type=="array" then map({name, status, state, file_path, containers: ((.containers // []) | map({name, image, status, state, health, ports}))}) else . end' /tmp/projects.json
+
+          echo "=== actions ==="
+          code=$(curl -sS --connect-timeout 20 --max-time 60 -w '%{http_code}' -o /tmp/actions.json "${auth[@]}" "$base/actions?page=1" || true)
+          echo "http ${code}"
+          jq 'if type=="array" then .[0:8] elif .data then .data[0:8] else . end' /tmp/actions.json
+
+          echo "=== paperclip-custom logs ==="
+          code=$(curl -sS --connect-timeout 20 --max-time 90 -w '%{http_code}' -o /tmp/logs.json "${auth[@]}" "$base/docker/paperclip-custom/logs" || true)
+          echo "http ${code}"
+          jq '
+            if type=="array" then
+              [.[] | {service, entries: ((.entries // []) | .[-40:] | map(.message // .content // .log // .))}]
+            else . end
+          ' /tmp/logs.json
