@@ -1,12 +1,27 @@
 # Paperclip Design Principles
 
-**Status:** v0.3 — anchor document for design-language simplification. Governs structure, not brand. Brand values (color, type, iconography) are intentionally unspecified: they are being redesigned and will land as token values only. Nothing in `ui/` may hardcode them. Spacing/radius scales are likewise TBD pending the token audit (see Principle 3).
+**Status:** v0.4 — adds the consumer visual direction (see "Visual direction"); the rest of v0.3 still applies. v0.3 was the anchor document for design-language simplification. Governs structure, not brand. Brand values (color, type, iconography) are intentionally unspecified: they are being redesigned and will land as token values only. Nothing in `ui/` may hardcode them. Spacing/radius scales are likewise TBD pending the token audit (see Principle 3).
 
 Changes from v0.2: token layer location corrected to the repo's real source (`ui/src/index.css`); existing token tiers inventoried; snapshot-coverage scope bounded for Run 1; the issue→task copy rename moved out of the zero-visual-change run.
 
 ## What this document is for
 
 Agents and humans modifying `ui/` treat this file as the source of truth for design decisions. Storybook is the verification surface — it documents the system; it does not define it. If a change conflicts with this document, change this document first (with review) or change the code.
+
+## Visual direction (v0.4, 2026-09 — consumer redesign)
+
+**Decision (owner, Rob):** Paperclip should feel like a consumer app. Someone opening it for the first time should know exactly what to do and be pleasantly surprised by how it looks. This overrides the "dark, dense control plane" posture below wherever the two conflict on first-run and primary surfaces; dense operator views (run transcripts, settings, logs) keep their density.
+
+What that means in tokens (all in `ui/src/index.css`):
+
+- **Palette.** Light = warm paper (`--background` ≈ oklch 0.984 / hue 85) with warm ink text; dark = deep violet-tinted night (hue 282). One brand accent, a friendly violet (`--primary` / `--brand`, hue ≈ 281), used for the primary action, focus rings, active nav icons and progress. Soft tints (`--brand-soft`, `--tint-peach|mint|sky|rose` with `-foreground` pairs) carry friendly status and icon tiles; they are exposed as Tailwind colors (`bg-tint-mint`, `text-brand-soft-foreground`, …).
+- **Default theme.** Light is the default for anyone who has not chosen a theme (the OS setting is no longer followed). Dark is fully supported and persists once picked.
+- **Type.** Inter for UI; Instrument Serif (`font-display`, self-hosted in `ui/public/fonts`) only for greetings and page titles. Headings get slight negative tracking.
+- **Shape and depth.** `--radius` is 0.75rem (cards `rounded-xl`/`2xl`, pills `rounded-full`). Tailwind's `shadow-xs..xl` are redefined as soft, warm, layered shadows whose tint follows the theme (`--shadow-tint*`).
+- **Motion.** `animate-rise-in` / `animate-fade-in` for page and empty-state entrances; buttons compress slightly on press. All motion respects `prefers-reduced-motion`.
+- **Surfaces.** Lists (inbox, tasks, agents) sit on a card surface (`rounded-2xl border bg-card shadow-xs`) rather than the bare page. Sidebar has its own `--sidebar` surface with a lifted active row.
+- **Home.** `/:company/home` is the landing page: greeting, one obvious primary action (the task composer, or "Hire your first agent" when there are none), a getting-started checklist until the first result exists, and three cards (Needs you, Your team, Recent work). Built-in helper agents are hidden there.
+- **Words.** Plain, friendly sentences. "Task" (never "issue") and "agent" are the nouns; nav uses Home, Inbox, Tasks, Overview, Org chart, Spending.
 
 ## Product stance
 

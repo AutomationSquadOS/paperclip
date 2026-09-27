@@ -69,6 +69,11 @@ function greetingFor(date: Date) {
   return "Good evening";
 }
 
+function isBuiltInAgent(agent: Agent) {
+  const metadata = agent.metadata as Record<string, unknown> | null | undefined;
+  return Boolean(metadata && metadata.paperclipBuiltInAgent);
+}
+
 function firstName(name: string | null | undefined) {
   const trimmed = name?.trim();
   if (!trimmed || trimmed.toLowerCase() === "board") return null;
@@ -119,7 +124,7 @@ export function Home() {
   });
 
   const visibleAgents = useMemo(
-    () => (agents ?? []).filter((agent) => agent.status !== "terminated"),
+    () => (agents ?? []).filter((agent) => agent.status !== "terminated" && !isBuiltInAgent(agent)),
     [agents],
   );
   const pendingApprovals = useMemo(
@@ -144,7 +149,7 @@ export function Home() {
         <EmptyState
           icon={LayoutDashboard}
           title="Welcome to Paperclip"
-          message="Set up your company and first AI teammate in about two minutes."
+          message="Set up your company and first agent in about two minutes."
           action="Get started"
           onAction={openOnboarding}
         />
@@ -190,15 +195,15 @@ export function Home() {
             </h1>
             <p className="max-w-xl text-base text-muted-foreground">
               {hasAgents
-                ? "Tell your AI team what you need. They'll get to work and check in when something needs you."
-                : "Paperclip runs a team of AI teammates for you. Start by hiring your first one."}
+                ? "Tell your agents what you need. They'll get to work and check in when something needs you."
+                : "Paperclip runs a team of AI agents for you. Start by hiring your first one."}
             </p>
           </div>
 
           {hasAgents ? (
             <form onSubmit={submitDraft} className="flex flex-col gap-3">
               <div className="rounded-2xl border bg-surface-raised shadow-md transition-shadow focus-within:border-ring/60 focus-within:shadow-lg focus-within:ring-4 focus-within:ring-ring/15">
-                <label htmlFor="home-composer" className="sr-only">Describe a task for your team</label>
+                <label htmlFor="home-composer" className="sr-only">Describe a task for your agents</label>
                 <textarea
                   id="home-composer"
                   ref={composerRef}
@@ -206,7 +211,7 @@ export function Home() {
                   onChange={(event) => setDraft(event.target.value)}
                   onKeyDown={handleComposerKey}
                   rows={2}
-                  placeholder="What should your team work on next?"
+                  placeholder="What should your agents work on next?"
                   className="block min-h-(--home-composer-min) w-full resize-none rounded-2xl bg-transparent px-5 pt-4 text-base text-foreground outline-none placeholder:text-muted-foreground/80"
                 />
                 <div className="flex items-center justify-between gap-3 px-4 pb-3">
@@ -240,7 +245,7 @@ export function Home() {
             <div>
               <Button size="lg" className="rounded-full px-6" onClick={hireAgent}>
                 <UserPlus className="h-4 w-4" />
-                Hire your first AI teammate
+                Hire your first agent
               </Button>
             </div>
           )}
@@ -261,14 +266,14 @@ export function Home() {
         <GettingStarted
           steps={[
             {
-              title: "Hire an AI teammate",
-              detail: "Pick a role and give them a name.",
+              title: "Hire an agent",
+              detail: "Pick a role and give it a name.",
               done: hasAgents,
               action: hireAgent,
               actionLabel: "Hire",
             },
             {
-              title: "Give them a task",
+              title: "Give it a task",
               detail: "Describe what you need in plain words.",
               done: hasTasks,
               action: hasAgents ? () => composerRef.current?.focus() : hireAgent,
@@ -453,7 +458,7 @@ function NeedsYouCard({ approvals, blocked, incidents }: { approvals: Approval[]
           icon={PartyPopper}
           iconClass="bg-tint-mint text-tint-mint-foreground"
           title="You're all caught up"
-          message="When a teammate needs a decision or gets stuck, it'll show up right here."
+          message="When an agent needs a decision or gets stuck, it will show up right here."
         />
       ) : (
         <div className="flex flex-col">
@@ -475,7 +480,7 @@ function NeedsYouCard({ approvals, blocked, incidents }: { approvals: Approval[]
               </span>
               <span className="min-w-0">
                 <span className="block truncate font-medium">{blocked} task{blocked === 1 ? " is" : "s are"} stuck</span>
-                <span className="block text-xs text-muted-foreground">A teammate needs help to continue</span>
+                <span className="block text-xs text-muted-foreground">An agent needs help to continue</span>
               </span>
             </RowLink>
           ) : null}
@@ -528,9 +533,9 @@ function TeamCard({
         <CardEmpty
           icon={UserPlus}
           iconClass="bg-brand-soft text-brand-soft-foreground"
-          title="No teammates yet"
-          message="AI teammates take on tasks for you: research, writing, coding, and more."
-          action={<Button size="sm" onClick={onHire}>Hire a teammate</Button>}
+          title="No agents yet"
+          message="Agents are AI teammates that take on tasks for you: research, writing, coding, and more."
+          action={<Button size="sm" onClick={onHire}>Hire an agent</Button>}
         />
       ) : (
         <div className="flex flex-col">
@@ -549,7 +554,7 @@ function TeamCard({
                 <span className="min-w-0">
                   <span className="block truncate font-medium">{agent.name}</span>
                   <span className="block truncate text-xs text-muted-foreground">
-                    {running && workingOn ? `Working on "${workingOn}"` : agent.title || "AI teammate"}
+                    {running && workingOn ? `Working on "${workingOn}"` : agent.title || "Agent"}
                   </span>
                 </span>
                 <span className={cn("ml-auto shrink-0 rounded-full px-2 py-0.5 text-xs font-medium", status.tone)}>{status.label}</span>
@@ -575,7 +580,7 @@ function RecentWorkCard({ issues, loading, onCreate }: { issues: Issue[]; loadin
           icon={ListTodo}
           iconClass="bg-tint-sky text-tint-sky-foreground"
           title="No tasks yet"
-          message="Describe what you need above and your team will take it from there."
+          message="Describe what you need above and your agents will take it from there."
           action={<Button size="sm" variant="outline" onClick={onCreate}>Write your first task</Button>}
         />
       ) : (

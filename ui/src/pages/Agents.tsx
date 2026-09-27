@@ -451,7 +451,7 @@ export function Agents() {
                 <AgentActionButtons
                   agent={agent}
                   companyId={selectedCompanyId}
-                  runLabel="Run Heartbeat"
+                  runLabel="Run now"
                   showStatus={false}
                 />
               </div>

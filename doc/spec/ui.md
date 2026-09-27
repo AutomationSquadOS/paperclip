@@ -3,6 +3,8 @@
 Status: Draft
 Date: 2026-02-17
 
+> **Update 2026-09 (consumer redesign):** The shipped UI now follows the consumer direction in [`DESIGN.md`](../../DESIGN.md#visual-direction-v04-2026-09--consumer-redesign): light theme by default, a violet brand accent, and a **Home** page (`/:company/home`) as the landing screen with a greeting, a task composer, a getting-started checklist, and Needs you / Your team / Recent work cards. Sidebar order is New task, Home, Inbox, History (Overview), Work (Tasks, More), Agents, Company (Org chart, Spending, More, Settings); mobile nav is Home, Inbox, New task, Tasks, Agents. Where this spec says "dark-themed by default" or describes the older sidebar, the redesign wins.
+
 ## 1. Design Philosophy
 
 Paperclip's UI is a professional-grade control plane, not a toy dashboard. It should feel like the kind of tool you live in all day — fast, keyboard-driven, information-dense without being cluttered, dark-themed by default. Every pixel should earn its place.
