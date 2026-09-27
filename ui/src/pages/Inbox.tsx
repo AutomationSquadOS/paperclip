@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "@/lib/router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { deriveOriginatingActor, INBOX_MINE_ISSUE_STATUS_FILTER } from "@paperclipai/shared";
 import { usePublishSharedQueryData, useSharedPollingQuery } from "@/hooks/useSharedPolling";
+import { InboxWaitingStrip } from "../components/InboxWaitingStrip";
 import { approvalsApi } from "../api/approvals";
 import { accessApi } from "../api/access";
 import { authApi } from "../api/auth";
@@ -2178,6 +2179,7 @@ export function Inbox() {
   const showGeneralIssueToolbarControls = tab !== "blocked";
   return (
     <div className="space-y-6">
+      <InboxWaitingStrip dashboard={dashboard} />
       <div className="space-y-2">
         {/* Search — full-width row on mobile, inline on desktop */}
         <div className="relative sm:hidden">

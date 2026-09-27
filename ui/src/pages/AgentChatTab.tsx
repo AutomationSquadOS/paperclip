@@ -262,7 +262,7 @@ export function AgentChatTab({
   }
 
   return (
-    <div className="flex min-h-[28rem] flex-col gap-3">
+    <div className="flex min-h-(--sz-28rem) flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <h2 className="text-sm font-medium text-foreground">Chat with {agent.name}</h2>

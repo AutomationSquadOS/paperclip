@@ -298,18 +298,19 @@ describe("Sidebar", () => {
     });
   });
 
-  it("does not poll attention until Decisions is enabled", async () => {
-    mockInstanceSettingsApi.getExperimental.mockResolvedValue({ enableDecisions: false });
+  it("does not load the decisions feed from the sidebar", async () => {
+    mockInstanceSettingsApi.getExperimental.mockResolvedValue({ enableDecisions: true });
     const root = await renderSidebar();
 
     expect(mockAttentionApi.list).not.toHaveBeenCalled();
+    expect(container.textContent).not.toContain("Decisions");
 
     flushSync(() => {
       root.unmount();
     });
   });
 
-  it("shows Status directly below Decisions in primary navigation", async () => {
+  it("keeps Status in History and leaves Decisions off the sidebar", async () => {
     mockInstanceSettingsApi.getExperimental.mockResolvedValue({
       enableDecisions: true,
       enableStatusCards: true,
@@ -321,12 +322,14 @@ describe("Sidebar", () => {
       (anchor) => anchor.textContent?.trim() === "Decisions",
     );
     const statusLink = primaryNavLinks.find((anchor) => anchor.getAttribute("href") === "/status");
+    const dashboardLink = primaryNavLinks.find((anchor) => anchor.getAttribute("href") === "/dashboard");
 
+    expect(decisionsLink).toBeUndefined();
     expect(statusLink?.textContent).toContain("Status");
     expect(statusLink?.textContent).toContain("beta");
     expect(statusLink?.textContent).not.toContain("exp");
     expect(statusLink?.textContent).not.toContain("cards");
-    expect(primaryNavLinks.indexOf(statusLink!)).toBe(primaryNavLinks.indexOf(decisionsLink!) + 1);
+    expect(primaryNavLinks.indexOf(statusLink!)).toBe(primaryNavLinks.indexOf(dashboardLink!) + 1);
 
     flushSync(() => {
       root.unmount();

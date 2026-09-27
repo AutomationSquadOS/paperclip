@@ -98,7 +98,7 @@ import { normalizeRememberedInstanceSettingsPath } from "./lib/instance-settings
 function boardRoutes() {
   return (
     <>
-      <Route index element={<Navigate to="dashboard" replace />} />
+      <Route index element={<InboxRootRedirect />} />
       <Route path="dashboard" element={<Dashboard />} />
       <Route path="dashboard/live" element={<DashboardLive />} />
       <Route path="timeline" element={<Timeline />} />
@@ -455,7 +455,7 @@ function CompanyRootRedirect() {
     return <NoCompaniesStartPage />;
   }
 
-  return <Navigate to={`/${targetCompany.issuePrefix}/dashboard`} replace />;
+  return <Navigate to={`/${targetCompany.issuePrefix}/inbox/${loadLastInboxTab()}`} replace />;
 }
 
 function StatusCardsLegacyRedirect() {

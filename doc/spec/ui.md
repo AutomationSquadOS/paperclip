@@ -940,9 +940,9 @@ Build on top of shadcn/ui components with these customizations:
 All routes are company-scoped after company selection (company context stored in React context, not URL):
 
 ```
-/                           → redirects to /dashboard
-/dashboard                  → company dashboard
-/inbox                      → inbox / attention items
+/                           → redirects to the last inbox tab
+/inbox                      → inbox, the front door
+/dashboard                  → quiet company summary
 /my-issues                  → board operator's issues
 /issues                     → issue list
 /issues/:issueId            → issue detail

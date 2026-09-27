@@ -1537,7 +1537,7 @@ export function IssueDetail() {
   const [copied, setCopied] = useState(false);
   const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
   const [fileViewerPromptOpen, setFileViewerPromptOpen] = useState(false);
-  const [detailTab, setDetailTab] = useState("chat");
+  const [chosenDetailTab, setChosenDetailTab] = useState<{ issueId: string; tab: string } | null>(null);
   const [handoffFocusSignal, setHandoffFocusSignal] = useState(0);
   const [pendingApprovalAction, setPendingApprovalAction] = useState<{
     approvalId: string;
@@ -1569,6 +1569,11 @@ export function IssueDetail() {
     [location.state, resolvedIssueDetailState],
   );
 
+  const chooseDetailTab = useCallback((value: string) => {
+    if (!issueId) return;
+    setChosenDetailTab({ issueId, tab: value });
+  }, [issueId]);
+
   const { data: issue, isLoading, error } = useQuery({
     ...getIssueDetailQueryOptions(queryClient, issueId!, {
       placeholderIssue: issueHeaderSeed ? {
@@ -1578,6 +1583,17 @@ export function IssueDetail() {
     }),
     enabled: !!issueId,
   });
+
+  const issueMatchesRoute = !!issue && (issue.id === issueId || issue.identifier === issueId);
+  const detailTab =
+    chosenDetailTab && chosenDetailTab.issueId === issueId
+      ? chosenDetailTab.tab
+      : issueMatchesRoute && issue.status === "in_review"
+        ? "chat"
+        : issueMatchesRoute
+          ? "activity"
+          : "chat";
+
   const resolvedCompanyId = issue?.companyId ?? selectedCompanyId;
   const externalObjectsState = useIssueExternalObjects(issue?.id ?? null);
   const commentComposerDisabledReason = useMemo(() => {
@@ -3313,7 +3329,7 @@ export function IssueDetail() {
       if (action === "focus_comment") {
         event.preventDefault();
         event.stopPropagation();
-        setDetailTab("chat");
+        chooseDetailTab("chat");
         setPendingCommentComposerFocusKey((current) => current + 1);
       }
       if (action === "open_file_viewer") {
@@ -3333,16 +3349,16 @@ export function IssueDetail() {
       document.removeEventListener("focusin", handleFocusIn, true);
       document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [fileViewerEnabled, keyboardShortcutsEnabled, navigate, sourceBreadcrumb.href]);
+  }, [chooseDetailTab, fileViewerEnabled, keyboardShortcutsEnabled, navigate, sourceBreadcrumb.href]);
 
   useEffect(() => {
     const hash = location.hash;
     if (!hash.startsWith("#document-")) return;
     const documentKey = decodeURIComponent(hash.slice("#document-".length));
     if (documentKey !== ISSUE_CONTINUATION_SUMMARY_DOCUMENT_KEY) return;
-    setDetailTab("activity");
+    chooseDetailTab("activity");
     setHandoffFocusSignal((current) => current + 1);
-  }, [location.hash]);
+  }, [chooseDetailTab, location.hash]);
 
   // Scroll + briefly highlight work-product / direct-attachment anchors so the
   // company Artifacts page (PAP-10359) can deep-link to a specific artifact in
@@ -4356,8 +4372,17 @@ export function IssueDetail() {
             <Button
               variant="ghost"
               size="icon-xs"
+              className="shrink-0 xl:hidden"
+              onClick={() => setMobilePropsOpen(true)}
+              title="Properties"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
               className={cn(
-                "shrink-0 transition-opacity duration-200",
+                "hidden shrink-0 transition-opacity duration-200 xl:inline-flex",
                 panelVisible ? "opacity-0 pointer-events-none w-0 overflow-hidden" : "opacity-100",
               )}
               onClick={() => setPanelVisible(true)}
@@ -4721,7 +4746,7 @@ export function IssueDetail() {
 
       <Separator />
 
-      <Tabs value={detailTab} onValueChange={setDetailTab} className="space-y-3">
+      <Tabs value={detailTab} onValueChange={chooseDetailTab} className="space-y-3">
         <TabsList variant="line" className="w-full justify-start gap-1">
           <TabsTrigger value="chat" className="gap-1.5">
             <MessageSquare className="h-3.5 w-3.5" />

@@ -11,6 +11,20 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Resolve deploy environment
+        id: deploy-env
+        env:
+          EXISTING_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -n "${EXISTING_AUTH_SECRET}" ]; then
+            secret="${EXISTING_AUTH_SECRET}"
+          else
+            secret="$(openssl rand -hex 32)"
+          fi
+          echo "::add-mask::${secret}"
+          echo "secret=${secret}" >> "$GITHUB_OUTPUT"
+
       - name: Deploy to Hostinger
         uses: hostinger/deploy-on-vps@v2
         with:
@@ -19,8 +33,9 @@ jobs:
           project-name: paperclip-custom
           docker-compose-path: docker/docker-compose.yml
           environment-variables: |
-            BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}
-            PAPERCLIP_PUBLIC_URL=${{ vars.PAPERCLIP_PUBLIC_URL }}
+            BETTER_AUTH_SECRET=${{ steps.deploy-env.outputs.secret }}
+            PAPERCLIP_PUBLIC_URL=http://187.77.131.124:3100
+            PAPERCLIP_ALLOWED_HOSTNAMES=187.77.131.124
             PAPERCLIP_DEPLOYMENT_MODE=authenticated
             PAPERCLIP_DEPLOYMENT_EXPOSURE=public
             PAPERCLIP_TOOL_ACTION_SIGNING_SECRET=${{ secrets.PAPERCLIP_TOOL_ACTION_SIGNING_SECRET }}

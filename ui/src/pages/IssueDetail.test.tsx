@@ -39,6 +39,9 @@ const mockIssuesApi = vi.hoisted(() => ({
   uploadAttachment: vi.fn(),
   deleteAttachment: vi.fn(),
   upsertDocument: vi.fn(),
+  listApprovals: vi.fn(),
+  getDocument: vi.fn(),
+  getCostSummary: vi.fn(),
 }));
 
 const mockActivityApi = vi.hoisted(() => ({
@@ -402,12 +405,29 @@ vi.mock("@/components/ui/skeleton", () => ({
   Skeleton: () => <div data-testid="skeleton" />,
 }));
 
-vi.mock("@/components/ui/tabs", () => ({
-  Tabs: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
-  TabsContent: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
-  TabsList: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
-  TabsTrigger: ({ children }: { children?: ReactNode }) => <button type="button">{children}</button>,
-}));
+vi.mock("@/components/ui/tabs", async () => {
+  const React = await import("react");
+  const TabsContext = React.createContext<((value: string) => void) | undefined>(undefined);
+  return {
+    Tabs: ({
+      children,
+      onValueChange,
+    }: {
+      children?: React.ReactNode;
+      onValueChange?: (value: string) => void;
+    }) => <TabsContext.Provider value={onValueChange}>{children}</TabsContext.Provider>,
+    TabsContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+    TabsList: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+    TabsTrigger: ({ children, value }: { children?: React.ReactNode; value: string }) => {
+      const onValueChange = React.useContext(TabsContext);
+      return (
+        <button type="button" onClick={() => onValueChange?.(value)}>
+          {children}
+        </button>
+      );
+    },
+  };
+});
 
 vi.mock("@/components/ui/textarea", () => ({
   Textarea: (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea {...props} />,
@@ -918,6 +938,17 @@ async function flushReact() {
   });
 }
 
+async function openIssueChatTab(container: HTMLElement) {
+  const chatTab = Array.from(container.querySelectorAll("button")).find(
+    (tab) => tab.textContent?.trim() === "Chat",
+  );
+  await act(async () => {
+    chatTab?.click();
+  });
+  await flushReact();
+  await flushReact();
+}
+
 async function waitForAssertion(assertion: () => void, attempts = 20) {
   let lastError: unknown;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -964,6 +995,9 @@ describe("IssueDetail", () => {
     mockIssuesApi.archiveFromInbox.mockResolvedValue({ id: "issue-1", archivedAt: new Date() });
     mockIssuesApi.getTreeControlState.mockResolvedValue({ activePauseHold: null });
     mockIssuesApi.listTreeHolds.mockResolvedValue([]);
+    mockIssuesApi.listApprovals.mockResolvedValue([]);
+    mockIssuesApi.getDocument.mockResolvedValue(null);
+    mockIssuesApi.getCostSummary.mockResolvedValue(null);
     mockActivityApi.forIssue.mockResolvedValue([]);
     mockActivityApi.runsForIssue.mockResolvedValue([]);
     mockHeartbeatsApi.liveRunsForIssue.mockResolvedValue([]);
@@ -1028,7 +1062,7 @@ describe("IssueDetail", () => {
     await flushReact();
 
     expect(container.textContent).toContain("Issue detail smoke");
-    expect(container.textContent).toContain("Chat thread");
+    expect(container.textContent).not.toContain("Chat thread");
     expect(
       consoleErrorSpy.mock.calls.some((call: unknown[]) =>
         String(call[0]).includes("React has detected a change in the order of Hooks"),
@@ -1269,6 +1303,7 @@ describe("IssueDetail", () => {
     });
     await flushReact();
     await flushReact();
+    await openIssueChatTab(container);
 
     const props = mockIssueChatThreadRender.mock.calls.at(-1)?.[0] as { comments?: Array<{ id: string; queueState?: string }> };
     const freshComment = props.comments?.find((comment) => comment.id === "comment-fresh");
@@ -1310,6 +1345,7 @@ describe("IssueDetail", () => {
     });
     await flushReact();
     await flushReact();
+    await openIssueChatTab(container);
 
     const props = mockIssueChatThreadRender.mock.calls.at(-1)?.[0] as {
       onAdd: (body: string) => Promise<void>;
@@ -1396,6 +1432,7 @@ describe("IssueDetail", () => {
     });
     await flushReact();
     await flushReact();
+    await openIssueChatTab(container);
 
     const props = mockIssueChatThreadRender.mock.calls.at(-1)?.[0] as {
       onAdd: (body: string) => Promise<void>;
@@ -1906,6 +1943,7 @@ describe("IssueDetail", () => {
     });
     await flushReact();
     await flushReact();
+    await openIssueChatTab(container);
 
     expect(mockIssueChatThreadRender.mock.calls.at(-1)?.[0]).toMatchObject({
       stopRunLabel: "Pause work",
@@ -1968,6 +2006,7 @@ describe("IssueDetail", () => {
       );
     });
     await flushReact();
+    await openIssueChatTab(container);
 
     const stopAndDoneButton = Array.from(container.querySelectorAll("button"))
       .find((button) => button.textContent?.trim() === "Stop and done");
@@ -2020,6 +2059,7 @@ describe("IssueDetail", () => {
       );
     });
     await flushReact();
+    await openIssueChatTab(container);
 
     const stopAndDoneButton = Array.from(container.querySelectorAll("button"))
       .find((button) => button.textContent?.trim() === "Stop and done");
@@ -2048,6 +2088,7 @@ describe("IssueDetail", () => {
       );
     });
     await flushReact();
+    await openIssueChatTab(container);
 
     expect(mockIssueChatThreadRender.mock.calls.at(-1)?.[0]).toMatchObject({
       issueWorkMode: "planning",
@@ -2065,6 +2106,7 @@ describe("IssueDetail", () => {
       );
     });
     await flushReact();
+    await openIssueChatTab(container);
 
     expect(mockIssueChatThreadRender.mock.calls.at(-1)?.[0]).toMatchObject({
       issueWorkMode: "ask",
@@ -2156,6 +2198,7 @@ describe("IssueDetail", () => {
       );
     });
     await flushReact();
+    await openIssueChatTab(container);
 
     expect(container.querySelector('[data-testid="issue-chat-thread"]')).not.toBeNull();
     expect(mockIssueChatThreadRender).toHaveBeenCalled();
@@ -2199,6 +2242,7 @@ describe("IssueDetail", () => {
     });
     await flushReact();
     await flushReact();
+    await openIssueChatTab(container);
 
     await waitForAssertion(() => {
       expect(mockIssueChatThreadRender.mock.calls.at(-1)?.[0].mentions).toEqual(
@@ -2239,6 +2283,7 @@ describe("IssueDetail", () => {
     });
     await flushReact();
     await flushReact();
+    await openIssueChatTab(container);
 
     const lastChatThreadProps = mockIssueChatThreadRender.mock.calls.at(-1)?.[0];
     expect(lastChatThreadProps?.issueWorkMode).toBe("standard");

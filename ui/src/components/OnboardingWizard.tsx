@@ -440,7 +440,8 @@ export function OnboardingWizard() {
         setCreatedProjectId(projectId);
       }
 
-      if (!createdIssueRef) {
+      let issueRef = createdIssueRef;
+      if (!issueRef) {
         const issue = await issuesApi.create(
           createdCompanyId,
           buildOnboardingIssuePayload({
@@ -451,7 +452,8 @@ export function OnboardingWizard() {
             goalId
           })
         );
-        setCreatedIssueRef(issue.identifier ?? issue.id);
+        issueRef = issue.identifier ?? issue.id;
+        setCreatedIssueRef(issueRef);
         queryClient.invalidateQueries({
           queryKey: queryKeys.issues.list(createdCompanyId)
         });
@@ -461,7 +463,11 @@ export function OnboardingWizard() {
       setSelectedCompanyId(createdCompanyId);
       reset();
       closeOnboarding();
-      navigate(prefix ? `/${prefix}/dashboard` : "/dashboard");
+      if (issueRef) {
+        navigate(prefix ? `/${prefix}/issues/${issueRef}` : `/issues/${issueRef}`);
+      } else {
+        navigate(prefix ? `/${prefix}/inbox` : "/inbox");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to launch first task");
     } finally {

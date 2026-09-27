@@ -158,6 +158,7 @@ export function AgentActionButtons({
   companyId,
   size = "sm",
   assignLabel = "Assign Task",
+  emphasizeAssign = false,
   runLabel = "Run now",
   showStatus = true,
   actionsDisabled = false,
@@ -174,6 +175,8 @@ export function AgentActionButtons({
   companyId?: string | null;
   size?: "sm" | "default";
   assignLabel?: string;
+  /** Detail pages use this so "Assign a task" is the one primary action. */
+  emphasizeAssign?: boolean;
   runLabel?: string;
   showStatus?: boolean;
   actionsDisabled?: boolean;
@@ -317,14 +320,14 @@ export function AgentActionButtons({
   return (
     <div className={className ?? "flex items-center gap-1 sm:gap-2 shrink-0"}>
       <Button
-        variant="outline"
+        variant={emphasizeAssign ? "default" : "outline"}
         size={size}
         onClick={() => openNewIssue({ assigneeAgentId: agent.id })}
         disabled={assignAndRunDisabled}
         title={workActionsDisabled ? workActionsDisabledReason : undefined}
       >
         <Plus className="h-3.5 w-3.5 sm:mr-1" />
-        <span className="hidden sm:inline">{assignLabel}</span>
+        <span className={emphasizeAssign ? undefined : "hidden sm:inline"}>{assignLabel}</span>
       </Button>
       <RunButton
         onClick={() => agentAction.mutate("invoke")}
