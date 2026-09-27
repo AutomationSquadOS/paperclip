@@ -13,6 +13,7 @@ import { formatCents } from "../lib/utils";
 import { LayoutDashboard, PauseCircle } from "lucide-react";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { Button } from "@/components/ui/button";
+import { PluginSlotOutlet } from "@/plugins/slots";
 
 export function Dashboard() {
   const { selectedCompanyId, companies } = useCompany();
@@ -109,6 +110,14 @@ export function Dashboard() {
           </Link>
         </p>
       ) : null}
+
+      {/* design-allow(card-pattern): class-string prop consumed by the plugin outlet */}
+      <PluginSlotOutlet
+        slotTypes={["dashboardWidget"]}
+        context={{ companyId: selectedCompanyId }}
+        className="grid gap-4 md:grid-cols-2"
+        itemClassName="rounded-lg border bg-card p-4 shadow-sm"
+      />
     </div>
   );
 }
