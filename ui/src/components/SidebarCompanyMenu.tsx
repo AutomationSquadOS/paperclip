@@ -196,7 +196,7 @@ export function SidebarCompanyMenu({ open: controlledOpen, onOpenChange }: Sideb
     setOpen(false);
     if (isMobile) setSidebarOpen(false);
     if (shouldLeaveCurrentRoute) {
-      navigate(`/${company.issuePrefix}/dashboard`);
+      navigate(`/${company.issuePrefix}/inbox`);
     }
   }
 

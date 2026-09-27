@@ -1538,6 +1538,8 @@ export function IssueDetail() {
   const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
   const [fileViewerPromptOpen, setFileViewerPromptOpen] = useState(false);
   const [detailTab, setDetailTab] = useState("chat");
+  const detailTabChosenRef = useRef(false);
+  const detailTabDefaultIssueIdRef = useRef<string | null>(null);
   const [handoffFocusSignal, setHandoffFocusSignal] = useState(0);
   const [pendingApprovalAction, setPendingApprovalAction] = useState<{
     approvalId: string;
@@ -1569,6 +1571,16 @@ export function IssueDetail() {
     [location.state, resolvedIssueDetailState],
   );
 
+  const chooseDetailTab = useCallback((value: string) => {
+    detailTabChosenRef.current = true;
+    setDetailTab(value);
+  }, []);
+
+  useEffect(() => {
+    detailTabChosenRef.current = false;
+    detailTabDefaultIssueIdRef.current = null;
+  }, [issueId]);
+
   const { data: issue, isLoading, error } = useQuery({
     ...getIssueDetailQueryOptions(queryClient, issueId!, {
       placeholderIssue: issueHeaderSeed ? {
@@ -1578,6 +1590,17 @@ export function IssueDetail() {
     }),
     enabled: !!issueId,
   });
+
+  useEffect(() => {
+    if (!issue || (issue.id !== issueId && issue.identifier !== issueId)) return;
+    if (detailTabDefaultIssueIdRef.current === issue.id || detailTabChosenRef.current) {
+      detailTabDefaultIssueIdRef.current = issue.id;
+      return;
+    }
+    detailTabDefaultIssueIdRef.current = issue.id;
+    setDetailTab(issue.status === "in_review" ? "chat" : "activity");
+  }, [issue, issueId]);
+
   const resolvedCompanyId = issue?.companyId ?? selectedCompanyId;
   const externalObjectsState = useIssueExternalObjects(issue?.id ?? null);
   const commentComposerDisabledReason = useMemo(() => {
@@ -4356,8 +4379,17 @@ export function IssueDetail() {
             <Button
               variant="ghost"
               size="icon-xs"
+              className="shrink-0 xl:hidden"
+              onClick={() => setMobilePropsOpen(true)}
+              title="Properties"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
               className={cn(
-                "shrink-0 transition-opacity duration-200",
+                "hidden shrink-0 transition-opacity duration-200 xl:inline-flex",
                 panelVisible ? "opacity-0 pointer-events-none w-0 overflow-hidden" : "opacity-100",
               )}
               onClick={() => setPanelVisible(true)}
@@ -4721,7 +4753,7 @@ export function IssueDetail() {
 
       <Separator />
 
-      <Tabs value={detailTab} onValueChange={setDetailTab} className="space-y-3">
+      <Tabs value={detailTab} onValueChange={chooseDetailTab} className="space-y-3">
         <TabsList variant="line" className="w-full justify-start gap-1">
           <TabsTrigger value="chat" className="gap-1.5">
             <MessageSquare className="h-3.5 w-3.5" />

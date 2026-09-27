@@ -280,7 +280,7 @@ describe("SidebarCompanyMenu", () => {
     });
   });
 
-  it("navigates to the selected company dashboard from company-prefixed routes", async () => {
+  it("navigates to the selected company inbox from company-prefixed routes", async () => {
     mockLocation.pathname = "/PAP/issues";
     const root = createRoot(container);
     const queryClient = new QueryClient({
@@ -316,7 +316,7 @@ describe("SidebarCompanyMenu", () => {
     await flushReact();
 
     expect(mockSetSelectedCompanyId).toHaveBeenCalledWith("company-2");
-    expect(mockNavigate).toHaveBeenCalledWith("/STR/dashboard");
+    expect(mockNavigate).toHaveBeenCalledWith("/STR/inbox");
 
     act(() => {
       root.unmount();

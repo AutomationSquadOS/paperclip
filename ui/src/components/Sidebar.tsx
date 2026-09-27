@@ -1,6 +1,5 @@
 import {
   Inbox,
-  ListChecks,
   CircleDot,
   Target,
   LayoutDashboard,
@@ -23,8 +22,9 @@ import {
   MessagesSquare,
   GanttChartSquare,
   LayoutGrid,
+  ChevronRight,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { NavLink } from "@/lib/router";
 import { SidebarSection } from "./SidebarSection";
@@ -35,11 +35,9 @@ import { SidebarStarredProjects } from "./SidebarStarredProjects";
 import { useDialogActions } from "../context/DialogContext";
 import { useCompany } from "../context/CompanyContext";
 import { useSidebar } from "../context/SidebarContext";
-import { attentionApi } from "../api/attention";
 import { heartbeatsApi } from "../api/heartbeats";
 import { instanceSettingsApi } from "../api/instanceSettings";
 import { queryKeys } from "../lib/queryKeys";
-import { attentionBadgeCount } from "../lib/attention";
 import { useInboxBadge } from "../hooks/useInboxBadge";
 import { usePublishSharedQueryData, useSharedPollingQuery } from "../hooks/useSharedPolling";
 import { Button } from "@/components/ui/button";
@@ -49,12 +47,55 @@ import { PluginSlotOutlet } from "@/plugins/slots";
 import { PluginLauncherOutlet } from "@/plugins/launchers";
 import { SidebarCompanyMenu } from "./SidebarCompanyMenu";
 
+function SidebarDisclosure({
+  label,
+  disclosureLabel,
+  open,
+  onOpenChange,
+  children,
+}: {
+  label: string;
+  disclosureLabel: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: ReactNode;
+}) {
+  const { collapsed, peeking } = useSidebar();
+  const rail = collapsed && !peeking;
+  // The collapsed rail has no room for a second caret. Show the icons directly
+  // so those destinations stay reachable, matching section behavior.
+  if (rail) {
+    return <div className="flex flex-col gap-0.5">{children}</div>;
+  }
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-label={open ? `Collapse ${disclosureLabel}` : `Expand ${disclosureLabel}`}
+        onClick={() => onOpenChange(!open)}
+        className="flex items-center gap-2.5 mx-2 rounded-lg px-2 py-1.5 pointer-coarse:py-1 text-(length:--text-compact) font-medium text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+      >
+        <ChevronRight className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-90")} />
+        <span className="truncate">{label}</span>
+      </button>
+      <div hidden={!open} className="flex flex-col gap-0.5">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function Sidebar() {
   const { openNewIssue } = useDialogActions();
   // Every labeled section is collapsible (session-scoped, default open) —
   // one policy across static nav groups and the data-driven sections.
   const [workOpen, setWorkOpen] = useState(true);
   const [companyOpen, setCompanyOpen] = useState(true);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [workMoreOpen, setWorkMoreOpen] = useState(false);
+  const [companyMoreOpen, setCompanyMoreOpen] = useState(false);
   const { selectedCompanyId, selectedCompany } = useCompany();
   const { isMobile, collapsed, collapseLocked, peeking, toggleCollapsed, setCollapsed } = useSidebar();
   const rail = collapsed && !peeking;
@@ -89,17 +130,6 @@ export function Sidebar() {
   const showStatusCards = experimentalSettings?.enableStatusCards === true;
   const goalsLinkPending = experimentalSettings === undefined;
   const showGoalsLink = experimentalSettings?.enableGoalsSidebarLink === true;
-  // Decisions (attention home) is an experimental surface (PAP-13481): the nav
-  // item is hidden entirely until the flag is enabled (same no-flash pattern as
-  // showWorkspacesLink — it defaults hidden, so no placeholder is needed).
-  const showDecisions = experimentalSettings?.enableDecisions === true;
-  const { data: attentionFeed } = useQuery({
-    queryKey: queryKeys.attention(selectedCompanyId!),
-    queryFn: () => attentionApi.list(selectedCompanyId!),
-    enabled: !!selectedCompanyId && showDecisions,
-    refetchInterval: 60_000,
-  });
-  const attentionCount = attentionBadgeCount(attentionFeed);
   const showCases = experimentalSettings?.enableCases === true;
   // Streamlined left navigation (top-level Projects link + starred children) is
   // now the standard product sidebar (PAP-12472). The former experimental
@@ -201,7 +231,6 @@ export function Sidebar() {
               newTaskButton
             );
           })()}
-          <SidebarNavItem to="/dashboard" label="Dashboard" icon={LayoutDashboard} liveCount={liveRunCount} />
           <SidebarNavItem
             to="/inbox"
             label="Inbox"
@@ -211,52 +240,58 @@ export function Sidebar() {
             badgeTone={inboxBadge.failedRuns > 0 ? "danger" : "default"}
             alert={inboxBadge.failedRuns > 0}
           />
-          {showDecisions ? (
-            <SidebarNavItem
-              to="/decisions"
-              label="Decisions"
-              icon={ListChecks}
-              badge={attentionCount}
-              badgeLabel="decisions"
-            />
-          ) : null}
-          {showStatusCards ? (
-            <SidebarNavItem to="/status" label="Status" icon={LayoutGrid} textBadge="beta" />
-          ) : null}
-          {conferenceRoomChatEnabled ? (
-            <SidebarNavItem to="/board-chat" label="Conference Room" icon={MessagesSquare} />
-          ) : null}
+          <SidebarDisclosure
+            label="History"
+            disclosureLabel="history"
+            open={historyOpen}
+            onOpenChange={setHistoryOpen}
+          >
+            <SidebarNavItem to="/dashboard" label="Dashboard" icon={LayoutDashboard} liveCount={liveRunCount} />
+            {showStatusCards ? (
+              <SidebarNavItem to="/status" label="Status" icon={LayoutGrid} textBadge="beta" />
+            ) : null}
+            {conferenceRoomChatEnabled ? (
+              <SidebarNavItem to="/board-chat" label="Conference Room" icon={MessagesSquare} />
+            ) : null}
+          </SidebarDisclosure>
         </div>
 
         <SidebarSection label="Work" collapsible={{ open: workOpen, onOpenChange: setWorkOpen }}>
           <SidebarNavItem to="/issues" label="Tasks" icon={CircleDot} />
-          {showCases ? (
-            <SidebarNavItem to="/cases" label="Cases" icon={Layers} textBadge="beta" />
-          ) : null}
-          <SidebarNavItem to="/routines" label="Routines" icon={Repeat} />
-          {showPipelines ? (
-            <SidebarNavItem to="/pipelines" label="Pipelines" icon={GitBranch} />
-          ) : null}
-          {showGoalsLink ? (
-            <SidebarNavItem to="/goals" label="Goals" icon={Target} />
-          ) : goalsLinkPending ? (
-            <div
-              data-testid="sidebar-goals-placeholder"
-              className="h-8 pointer-coarse:h-7"
-              aria-hidden="true"
-            />
-          ) : null}
-          <SidebarNavItem to="/artifacts" label="Artifacts" icon={Package} />
-          <SidebarNavItem to="/skills" label="Skills" icon={Boxes} />
-          {showWorkspacesLink ? (
-            <SidebarNavItem to="/workspaces" label="Workspaces" icon={GitBranch} />
-          ) : null}
-          {streamlined ? (
-            <>
-              <SidebarNavItem to="/projects" label="Projects" icon={FolderOpen} />
-              <SidebarStarredProjects />
-            </>
-          ) : null}
+          <SidebarDisclosure
+            label="More"
+            disclosureLabel="more work"
+            open={workMoreOpen}
+            onOpenChange={setWorkMoreOpen}
+          >
+            <SidebarNavItem to="/routines" label="Routines" icon={Repeat} />
+            {showGoalsLink ? (
+              <SidebarNavItem to="/goals" label="Goals" icon={Target} />
+            ) : goalsLinkPending ? (
+              <div
+                data-testid="sidebar-goals-placeholder"
+                className="h-8 pointer-coarse:h-7"
+                aria-hidden="true"
+              />
+            ) : null}
+            <SidebarNavItem to="/artifacts" label="Artifacts" icon={Package} />
+            <SidebarNavItem to="/skills" label="Skills" icon={Boxes} />
+            {showWorkspacesLink ? (
+              <SidebarNavItem to="/workspaces" label="Workspaces" icon={GitBranch} />
+            ) : null}
+            {showPipelines ? (
+              <SidebarNavItem to="/pipelines" label="Pipelines" icon={GitBranch} />
+            ) : null}
+            {showCases ? (
+              <SidebarNavItem to="/cases" label="Cases" icon={Layers} textBadge="beta" />
+            ) : null}
+            {streamlined ? (
+              <>
+                <SidebarNavItem to="/projects" label="Projects" icon={FolderOpen} />
+                <SidebarStarredProjects />
+              </>
+            ) : null}
+          </SidebarDisclosure>
           <PluginSlotOutlet
             slotTypes={["sidebar"]}
             context={pluginContext}
@@ -279,10 +314,17 @@ export function Sidebar() {
 
         <SidebarSection label="Company" collapsible={{ open: companyOpen, onOpenChange: setCompanyOpen }}>
           <SidebarNavItem to="/org" label="Org" icon={Network} />
-          {showApps ? <SidebarNavItem to="/apps" label="Apps" icon={AppWindow} /> : null}
-          <SidebarNavItem to="/timeline" label="Timeline" icon={GanttChartSquare} />
           <SidebarNavItem to="/costs" label="Costs" icon={DollarSign} />
-          <SidebarNavItem to="/activity" label="Activity" icon={History} />
+          <SidebarDisclosure
+            label="More"
+            disclosureLabel="more company"
+            open={companyMoreOpen}
+            onOpenChange={setCompanyMoreOpen}
+          >
+            <SidebarNavItem to="/timeline" label="Timeline" icon={GanttChartSquare} />
+            <SidebarNavItem to="/activity" label="Activity" icon={History} />
+            {showApps ? <SidebarNavItem to="/apps" label="Apps" icon={AppWindow} /> : null}
+          </SidebarDisclosure>
           <SidebarNavItem to="/company/settings" label="Settings" icon={Settings} />
         </SidebarSection>
 

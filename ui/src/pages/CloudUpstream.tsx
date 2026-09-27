@@ -76,9 +76,9 @@ export function CloudUpstream() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: selectedCompany?.name ?? "Company", href: "/dashboard" },
+      { label: selectedCompany?.name ?? "Company", href: "/inbox" },
       { label: "Settings", href: "/company/settings" },
-      { label: "Cloud upstream" },
+      { label: "Hosting" },
     ]);
   }, [selectedCompany?.name, setBreadcrumbs]);
 
@@ -112,7 +112,7 @@ export function CloudUpstream() {
       cloudUpstreamsApi.finishConnect(input),
     onSuccess: async () => {
       localStorage.removeItem(PENDING_CONNECTION_KEY);
-      setNotice("Cloud upstream connection approved.");
+      setNotice("Hosting connection approved.");
       setActionError(null);
       await invalidateUpstreams();
       window.history.replaceState(null, "", settingsPath);
@@ -138,7 +138,7 @@ export function CloudUpstream() {
 
   useEffect(() => {
     if (callbackError) {
-      setActionError(`Cloud upstream connection was not approved: ${callbackError}`);
+      setActionError(`Hosting connection was not approved: ${callbackError}`);
     }
   }, [callbackError]);
 
@@ -204,7 +204,7 @@ export function CloudUpstream() {
   }
 
   if (!selectedCompanyId || !selectedCompany) {
-    return <div className="text-sm text-muted-foreground">Select a company to configure cloud upstream.</div>;
+    return <div className="text-sm text-muted-foreground">Select a company to configure hosting.</div>;
   }
 
   if (experimentalQuery.isLoading) {
@@ -216,7 +216,7 @@ export function CloudUpstream() {
       <div className="max-w-2xl space-y-4">
         <div className="flex items-center gap-2">
           <CloudUpload className="h-5 w-5 text-muted-foreground" />
-          <h1 className="text-lg font-semibold">Cloud upstream</h1>
+          <h1 className="text-lg font-semibold">Hosting</h1>
         </div>
         <div className="rounded-md border border-border px-4 py-4 text-sm text-muted-foreground">
           Cloud sync is disabled. Enable it in{" "}
@@ -238,7 +238,7 @@ export function CloudUpstream() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <CloudUpload className="h-5 w-5 text-muted-foreground" />
-            <h1 className="text-lg font-semibold">Cloud upstream</h1>
+            <h1 className="text-lg font-semibold">Hosting</h1>
           </div>
           <p className="max-w-2xl text-sm text-muted-foreground">
             Push {selectedCompany.name} into a Paperclip Cloud stack. Automations stay paused until activation.

@@ -82,7 +82,7 @@ export function CompanySettingsSidebar() {
     <aside className="w-full h-full min-h-0 border-r border-border bg-background flex flex-col">
       <div className="flex flex-col gap-1 px-3 py-3 shrink-0">
         <Link
-          to="/dashboard"
+          to="/inbox"
           onClick={() => {
             if (isMobile) setSidebarOpen(false);
           }}
@@ -105,14 +105,6 @@ export function CompanySettingsSidebar() {
         </div>
         <div className="flex flex-col gap-0.5">
           <SidebarNavItem to="/company/settings" label="General" icon={SlidersHorizontal} end />
-          {showCloudUpstream ? (
-            <SidebarNavItem
-              to="/company/settings/cloud-upstream"
-              label="Cloud upstream"
-              icon={CloudUpload}
-              end
-            />
-          ) : null}
           <SidebarNavItem
             to="/company/settings/members"
             label="Members"
@@ -133,6 +125,14 @@ export function CompanySettingsSidebar() {
             ))}
           <SidebarNavItem to="/company/settings/invites" label="Invites" icon={MailPlus} end />
           <SidebarNavItem to="/company/settings/secrets" label="Secrets" icon={KeyRound} end />
+          {showCloudUpstream ? (
+            <SidebarNavItem
+              to="/company/settings/cloud-upstream"
+              label="Hosting"
+              icon={CloudUpload}
+              end
+            />
+          ) : null}
         </div>
         <div className="mt-5 px-3 pb-1 text-(length:--text-micro) font-semibold uppercase tracking-wide text-muted-foreground">
           Instance settings

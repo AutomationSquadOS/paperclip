@@ -93,23 +93,32 @@ describe("CompanySettingsNav", () => {
     });
 
     expect(container.textContent).toContain("members");
+    expect(container.textContent).toContain("Company");
+    expect(container.textContent).toContain("Instance");
     expect(pageTabBarMock).toHaveBeenCalledWith(
       expect.objectContaining({
         value: "members",
         items: [
           { value: "general", label: "General" },
-          { value: "cloud-upstream", label: "Cloud upstream" },
           { value: "members", label: "Members" },
           { value: "invites", label: "Invites" },
           { value: "secrets", label: "Secrets" },
-          { value: "instance-profile", label: "Instance profile" },
-          { value: "instance-general", label: "Instance general" },
-          { value: "instance-environments", label: "Instance environments" },
-          { value: "instance-access", label: "Instance access" },
-          { value: "instance-heartbeats", label: "Instance heartbeats" },
-          { value: "instance-experimental", label: "Instance experimental" },
-          { value: "instance-plugins", label: "Instance plugins" },
-          { value: "instance-adapters", label: "Instance adapters" },
+          { value: "cloud-upstream", label: "Hosting" },
+        ],
+      }),
+    );
+    expect(pageTabBarMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        value: "members",
+        items: [
+          { value: "instance-profile", label: "Profile" },
+          { value: "instance-general", label: "General" },
+          { value: "instance-environments", label: "Environments" },
+          { value: "instance-access", label: "Access" },
+          { value: "instance-heartbeats", label: "Heartbeats" },
+          { value: "instance-plugins", label: "Plugins" },
+          { value: "instance-adapters", label: "Adapters" },
+          { value: "instance-experimental", label: "Experimental" },
         ],
       }),
     );

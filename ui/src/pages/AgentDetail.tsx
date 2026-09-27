@@ -272,7 +272,7 @@ function scrollToContainerBottom(container: ScrollContainer, behavior: ScrollBeh
   container.scrollTo({ top: container.scrollHeight, behavior });
 }
 
-type AgentDetailView = "dashboard" | "instructions" | "configuration" | "skills" | "tools" | "runs" | "budget" | "chat";
+type AgentDetailView = "dashboard" | "instructions" | "configuration" | "skills" | "tools" | "runs" | "budget" | "chat" | "setup";
 
 function parseAgentDetailView(value: string | null): AgentDetailView {
   if (value === "instructions" || value === "prompts") return "instructions";
@@ -280,9 +280,15 @@ function parseAgentDetailView(value: string | null): AgentDetailView {
   if (value === "skills") return "skills";
   if (value === "tools") return "tools";
   if (value === "budget") return "budget";
+  if (value === "setup") return "setup";
   if (value === "chat") return "chat";
   if (value === "runs") return value;
-  return "dashboard";
+  if (value === "dashboard") return "dashboard";
+  return "chat";
+}
+
+function isAgentSetupView(view: AgentDetailView): boolean {
+  return view === "setup" || view === "configuration" || view === "skills" || view === "tools" || view === "budget";
 }
 
 function usageNumber(usage: Record<string, unknown> | null, ...keys: string[]) {
@@ -830,7 +836,7 @@ export function AgentDetail() {
   const { data: allAgents } = useQuery({
     queryKey: queryKeys.agents.list(resolvedCompanyId!),
     queryFn: () => agentsApi.list(resolvedCompanyId!),
-    enabled: !!resolvedCompanyId && needsDashboardData,
+    enabled: !!resolvedCompanyId && (needsDashboardData || Boolean(agent?.reportsTo)),
   });
 
   const { data: budgetOverview } = useQuery({
@@ -844,7 +850,6 @@ export function AgentDetail() {
   const assignedIssues = (allIssues ?? [])
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   const reportsToAgent = (allAgents ?? []).find((a) => a.id === agent?.reportsTo);
-  const directReports = (allAgents ?? []).filter((a) => a.reportsTo === agent?.id && a.status !== "terminated");
   const agentBudgetSummary = useMemo(() => {
     const matched = budgetOverview?.policies.find(
       (policy) => policy.scopeType === "agent" && policy.scopeId === (agent?.id ?? routeAgentRef),
@@ -876,10 +881,21 @@ export function AgentDetail() {
       windowEnd: new Date(),
     } satisfies BudgetPolicySummary;
   }, [agent, budgetOverview?.policies, resolvedCompanyId, routeAgentRef]);
+  const { data: companyLiveRuns } = useQuery({
+    queryKey: queryKeys.liveRuns(resolvedCompanyId!),
+    queryFn: () => heartbeatsApi.liveRunsForCompany(resolvedCompanyId!),
+    enabled: !!resolvedCompanyId && !!agent?.id,
+  });
   const mobileLiveRun = useMemo(
     () => (heartbeats ?? []).find((r) => r.status === "running" || r.status === "queued") ?? null,
     [heartbeats],
   );
+  const headerLiveRun = useMemo(() => {
+    const fromCompany = (companyLiveRuns ?? []).find(
+      (run) => run.agentId === agent?.id && (run.status === "running" || run.status === "queued"),
+    );
+    return fromCompany ?? mobileLiveRun;
+  }, [agent?.id, companyLiveRuns, mobileLiveRun]);
 
   useEffect(() => {
     if (!agent) return;
@@ -902,9 +918,13 @@ export function AgentDetail() {
                 ? "runs"
                 : activeView === "budget"
                   ? "budget"
-                  : activeView === "chat"
-                    ? "chat"
-                    : "dashboard";
+                  : activeView === "setup"
+                    ? "setup"
+                    : activeView === "chat"
+                      ? "chat"
+                      : activeView === "dashboard"
+                        ? "dashboard"
+                        : "chat";
     if (routeAgentRef !== canonicalAgentRef || urlTab !== canonicalTab) {
       navigate(`/agents/${canonicalAgentRef}/${canonicalTab}`, { replace: true });
       return;
@@ -994,10 +1014,10 @@ export function AgentDetail() {
       { label: "Agents", href: "/agents" },
     ];
     const agentName = agent?.name ?? routeAgentRef ?? "Agent";
-    if (activeView === "dashboard" && !urlRunId) {
+    if ((activeView === "dashboard" || activeView === "chat") && !urlRunId) {
       crumbs.push({ label: agentName });
     } else {
-      crumbs.push({ label: agentName, href: `/agents/${canonicalAgentRef}/dashboard` });
+      crumbs.push({ label: agentName, href: `/agents/${canonicalAgentRef}/chat` });
       if (urlRunId) {
         crumbs.push({ label: "Runs", href: `/agents/${canonicalAgentRef}/runs` });
         crumbs.push({ label: `Run ${urlRunId.slice(0, 8)}` });
@@ -1013,6 +1033,8 @@ export function AgentDetail() {
         crumbs.push({ label: "Runs" });
       } else if (activeView === "budget") {
         crumbs.push({ label: "Budget" });
+      } else if (activeView === "setup") {
+        crumbs.push({ label: "Setup" });
       } else if (activeView === "chat") {
         crumbs.push({ label: "Chat" });
       } else {
@@ -1049,11 +1071,11 @@ export function AgentDetail() {
   if (error) return <p className="text-sm text-destructive">{error.message}</p>;
   if (!agent) return null;
   if (!urlRunId && !urlTab) {
-    return <Navigate to={`/agents/${canonicalAgentRef}/dashboard`} replace />;
+    return <Navigate to={`/agents/${canonicalAgentRef}/chat`} replace />;
   }
   const isPendingApproval = agent.status === "pending_approval";
   const hasInvalidOrgChain = agent.orgChainHealth?.status === "invalid_org_chain";
-  const showConfigActionBar = (activeView === "configuration" || activeView === "instructions") && (configDirty || configSaving);
+  const showConfigActionBar = (activeView === "configuration" || activeView === "instructions" || isAgentSetupView(activeView)) && (configDirty || configSaving);
   const showLeftAgentNotice = agentMembershipState === "left" && !dismissedLeftAgentIds.has(agent.id);
   const agentMembershipPending =
     membershipMutation.isPending &&
@@ -1138,6 +1160,7 @@ export function AgentDetail() {
             <p className="text-sm text-muted-foreground truncate">
               {roleLabels[agent.role] ?? agent.role}
               {agent.title ? ` - ${agent.title}` : ""}
+              {reportsToAgent ? ` · Reports to ${reportsToAgent.name}` : ""}
             </p>
           </div>
         </div>
@@ -1154,10 +1177,19 @@ export function AgentDetail() {
               starred: next,
             })}
           />
+          {headerLiveRun ? (
+            <Button
+              size="sm"
+              onClick={() => navigate(`/agents/${canonicalAgentRef}/runs/${headerLiveRun.id}`)}
+            >
+              Open live run
+            </Button>
+          ) : null}
           <AgentActionButtons
             agent={agent}
             companyId={resolvedCompanyId}
-            assignLabel="Assign Task"
+            assignLabel="Assign a task"
+            emphasizeAssign={!headerLiveRun}
             runLabel="Run Heartbeat"
             actionsDisabled={agentAction.isPending}
             workActionsDisabled={hasInvalidOrgChain}
@@ -1178,20 +1210,7 @@ export function AgentDetail() {
                   }
                 : undefined
             }
-          >
-            {mobileLiveRun && (
-              <Link
-                to={`/agents/${canonicalAgentRef}/runs/${mobileLiveRun.id}`}
-                className="sm:hidden flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 hover:bg-blue-500/20 transition-colors no-underline"
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
-                </span>
-                <span className="text-(length:--text-micro) font-medium text-blue-600 dark:text-blue-400">Live</span>
-              </Link>
-            )}
-          </AgentActionButtons>
+          />
         </div>
       </div>
 
@@ -1245,21 +1264,17 @@ export function AgentDetail() {
 
       {!urlRunId && (
         <Tabs
-          value={activeView}
+          value={isAgentSetupView(activeView) ? "setup" : activeView === "dashboard" ? "chat" : activeView}
           onValueChange={(value) => navigate(`/agents/${canonicalAgentRef}/${value}`)}
         >
           <PageTabBar
             items={[
-              { value: "dashboard", label: "Dashboard" },
               { value: "chat", label: "Chat" },
               { value: "instructions", label: "Instructions" },
-              { value: "skills", label: "Skills" },
-              { value: "configuration", label: "Configuration" },
-              { value: "tools", label: "Tools" },
               { value: "runs", label: "Runs" },
-              { value: "budget", label: "Budget" },
+              { value: "setup", label: "Setup" },
             ]}
-            value={activeView}
+            value={isAgentSetupView(activeView) ? "setup" : activeView === "dashboard" ? "chat" : activeView}
             onValueChange={(value) => navigate(`/agents/${canonicalAgentRef}/${value}`)}
           />
         </Tabs>
@@ -1331,18 +1346,7 @@ export function AgentDetail() {
       )}
 
       {/* View content */}
-      {activeView === "dashboard" && (
-        <AgentOverview
-          agent={agent}
-          runs={heartbeats ?? []}
-          assignedIssues={assignedIssues}
-          runtimeState={runtimeState}
-          agentId={agent.id}
-          agentRouteId={canonicalAgentRef}
-        />
-      )}
-
-      {activeView === "chat" && resolvedCompanyId && (
+      {(activeView === "dashboard" || activeView === "chat") && resolvedCompanyId && (
         <AgentChatTab agent={agent} companyId={resolvedCompanyId} />
       )}
 
@@ -1357,28 +1361,46 @@ export function AgentDetail() {
         />
       )}
 
-      {activeView === "configuration" && (
-        <AgentConfigurePage
-          agent={agent}
-          agentId={agent.id}
-          companyId={resolvedCompanyId ?? undefined}
-          onDirtyChange={setConfigDirty}
-          onSaveActionChange={setSaveConfigAction}
-          onCancelActionChange={setCancelConfigAction}
-          onSavingChange={setConfigSaving}
-          updatePermissions={updatePermissions}
-        />
-      )}
-
-      {activeView === "skills" && (
-        <AgentSkillsTab
-          agent={agent}
-          companyId={resolvedCompanyId ?? undefined}
-        />
-      )}
-
-      {activeView === "tools" && resolvedCompanyId && (
-        <AgentToolsTab agent={agent} companyId={resolvedCompanyId} />
+      {isAgentSetupView(activeView) && (
+        <div className="space-y-8">
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Configuration</h3>
+            <AgentConfigurePage
+              agent={agent}
+              agentId={agent.id}
+              companyId={resolvedCompanyId ?? undefined}
+              onDirtyChange={setConfigDirty}
+              onSaveActionChange={setSaveConfigAction}
+              onCancelActionChange={setCancelConfigAction}
+              onSavingChange={setConfigSaving}
+              updatePermissions={updatePermissions}
+            />
+          </section>
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Skills</h3>
+            <AgentSkillsTab
+              agent={agent}
+              companyId={resolvedCompanyId ?? undefined}
+            />
+          </section>
+          {resolvedCompanyId ? (
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Tools</h3>
+              <AgentToolsTab agent={agent} companyId={resolvedCompanyId} />
+            </section>
+          ) : null}
+          {resolvedCompanyId ? (
+            <section className="max-w-3xl space-y-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Budget</h3>
+              <BudgetPolicyCard
+                summary={agentBudgetSummary}
+                isSaving={budgetMutation.isPending}
+                onSave={(amount) => budgetMutation.mutate(amount)}
+                variant="plain"
+              />
+            </section>
+          ) : null}
+        </div>
       )}
 
       {activeView === "runs" && (
@@ -1393,16 +1415,6 @@ export function AgentDetail() {
         />
       )}
 
-      {activeView === "budget" && resolvedCompanyId ? (
-        <div className="max-w-3xl">
-          <BudgetPolicyCard
-            summary={agentBudgetSummary}
-            isSaving={budgetMutation.isPending}
-            onSave={(amount) => budgetMutation.mutate(amount)}
-            variant="plain"
-          />
-        </div>
-      ) : null}
     </div>
   );
 }
