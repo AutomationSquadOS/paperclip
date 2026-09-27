@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import { NavLink, useLocation } from "@/lib/router";
 import {
   CircleDot,
-  SquarePen,
+  House,
+  Plus,
   Users,
   Inbox,
 } from "lucide-react";
@@ -28,7 +29,7 @@ interface MobileNavLinkItem {
 interface MobileNavActionItem {
   type: "action";
   label: string;
-  icon: typeof SquarePen;
+  icon: typeof Plus;
   onClick: () => void;
 }
 
@@ -42,6 +43,7 @@ export function MobileBottomNav({ visible }: MobileBottomNavProps) {
 
   const items = useMemo<MobileNavItem[]>(
     () => [
+      { type: "link", to: "/home", label: "Home", icon: House },
       {
         type: "link",
         to: "/inbox",
@@ -49,8 +51,8 @@ export function MobileBottomNav({ visible }: MobileBottomNavProps) {
         icon: Inbox,
         badge: inboxBadge.inbox,
       },
+      { type: "action", label: "New task", icon: Plus, onClick: () => openNewIssue() },
       { type: "link", to: "/issues", label: "Tasks", icon: CircleDot },
-      { type: "action", label: "Create", icon: SquarePen, onClick: () => openNewIssue() },
       { type: "link", to: "/agents/all", label: "Agents", icon: Users },
     ],
     [openNewIssue, inboxBadge.inbox],
@@ -59,12 +61,12 @@ export function MobileBottomNav({ visible }: MobileBottomNavProps) {
   return (
     <nav
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85 transition-transform duration-200 ease-out md:hidden pb-(--sz-safe-bottom)",
+        "fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/85 transition-transform duration-200 ease-out md:hidden pb-(--sz-safe-bottom)",
         visible ? "translate-y-0" : "translate-y-full",
       )}
       aria-label="Mobile navigation"
     >
-      <div className="grid h-16 grid-cols-4 px-1">
+      <div className="grid h-16 grid-cols-5 px-1">
         {items.map((item) => {
           if (item.type === "action") {
             const Icon = item.icon;
@@ -74,15 +76,13 @@ export function MobileBottomNav({ visible }: MobileBottomNavProps) {
                 key={item.label}
                 type="button"
                 onClick={item.onClick}
-                className={cn(
-                  "relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-md text-(length:--text-nano) font-medium transition-colors",
-                  active
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
+                aria-label={item.label}
+                aria-pressed={active}
+                className="relative flex min-w-0 flex-col items-center justify-center"
               >
-                <Icon className="h-(--sz-18px) w-(--sz-18px)" />
-                <span className="truncate">{item.label}</span>
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform active:scale-(--s-0_98)">
+                  <Icon className="h-6 w-6" />
+                </span>
               </button>
             );
           }
@@ -97,7 +97,7 @@ export function MobileBottomNav({ visible }: MobileBottomNavProps) {
                 cn(
                   "relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-md text-(length:--text-nano) font-medium transition-colors",
                   isActive
-                    ? "text-foreground"
+                    ? "text-primary"
                     : "text-muted-foreground hover:text-foreground",
                 )
               }
