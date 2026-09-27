@@ -20,7 +20,7 @@ export function PropertySection({
       {title ? (
         <div
           className={cn(
-            "text-xs font-semibold uppercase tracking-wide text-muted-foreground pb-1",
+            "text-xs font-semibold text-muted-foreground pb-1",
             first ? "pt-0" : "pt-3",
           )}
         >

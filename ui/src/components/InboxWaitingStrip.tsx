@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import { ArrowRight, CheckCircle2, PauseCircle, Scale, type LucideIcon } from "lucide-react";
 import { Link } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import type { DashboardSummary } from "@paperclipai/shared";
@@ -27,36 +29,52 @@ export function InboxWaitingStrip({ dashboard }: { dashboard: DashboardSummary |
   if (decisionCount === 0 && approvalCount === 0 && incidentCount === 0) return null;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {decisionCount > 0 ? (
-        <Link
-          to="/decisions"
-          className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3 text-sm no-underline text-inherit hover:bg-accent/50"
-        >
-          <span className="font-medium">Decisions</span>
-          <span className="text-muted-foreground">{decisionCount} waiting</span>
-        </Link>
+        <WaitingCard to="/decisions" icon={Scale} tone="bg-brand-soft text-brand-soft-foreground" title="Decisions">
+          {decisionCount} waiting
+        </WaitingCard>
       ) : null}
       {approvalCount > 0 ? (
-        <Link
-          to="/approvals/pending"
-          className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3 text-sm no-underline text-inherit hover:bg-accent/50"
-        >
-          <span className="font-medium">Approvals</span>
-          <span className="text-muted-foreground">{approvalCount} waiting</span>
-        </Link>
+        <WaitingCard to="/approvals/pending" icon={CheckCircle2} tone="bg-tint-peach text-tint-peach-foreground" title="Approvals">
+          {approvalCount} waiting
+        </WaitingCard>
       ) : null}
       {incidentCount > 0 ? (
-        <Link
-          to="/costs"
-          className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3 text-sm no-underline text-inherit hover:bg-accent/50"
-        >
-          <span className="font-medium">Budget</span>
-          <span className="text-muted-foreground">
-            {incidentCount} incident{incidentCount === 1 ? "" : "s"}
-          </span>
-        </Link>
+        <WaitingCard to="/costs" icon={PauseCircle} tone="bg-tint-rose text-tint-rose-foreground" title="Budget">
+          {incidentCount} incident{incidentCount === 1 ? "" : "s"}
+        </WaitingCard>
       ) : null}
     </div>
+  );
+}
+
+function WaitingCard({
+  to,
+  icon: Icon,
+  tone,
+  title,
+  children,
+}: {
+  to: string;
+  icon: LucideIcon;
+  tone: string;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      to={to}
+      className="group flex items-center gap-3 rounded-xl border bg-card px-4 py-3 text-sm text-inherit no-underline shadow-xs transition-shadow hover:shadow-md"
+    >
+      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${tone}`}>
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="block font-semibold">{title}</span>
+        <span className="block text-muted-foreground">{children}</span>
+      </span>
+      <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5" />
+    </Link>
   );
 }

@@ -192,6 +192,11 @@ export function Issues() {
   }
 
   return (
+    <div className="space-y-5">
+      <div className="flex flex-col gap-1">
+        <h1 className="font-display text-3xl leading-tight md:text-4xl">Tasks</h1>
+        <p className="text-sm text-muted-foreground">Everything your agents are working on, in one place.</p>
+      </div>
     <IssuesList
       issues={issues ?? []}
       isLoading={isLoading}
@@ -212,5 +217,6 @@ export function Issues() {
       onUpdateIssue={(id, data) => updateIssue.mutate({ id, data })}
       searchFilters={participantAgentId || workspaceIdFilter ? { participantAgentId, workspaceId: workspaceIdFilter } : undefined}
     />
+    </div>
   );
 }
