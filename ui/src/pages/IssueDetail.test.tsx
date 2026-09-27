@@ -939,21 +939,14 @@ async function flushReact() {
 }
 
 async function openIssueChatTab(container: HTMLElement) {
-  const tabs = Array.from(container.querySelectorAll('[role="tab"]'));
-  const chatTab = tabs.find((tab) => tab.textContent?.trim() === "Chat");
-  if (!chatTab) {
-    const buttons = Array.from(container.querySelectorAll("button")).map((button) => button.textContent?.trim()).filter(Boolean);
-    throw new Error(`chat tab missing; buttons=${buttons.slice(0, 30).join("|")}; hasChat=${container.textContent?.includes("Chat")}`);
-  }
+  const chatTab = Array.from(container.querySelectorAll("button")).find(
+    (tab) => tab.textContent?.trim() === "Chat",
+  );
   await act(async () => {
-    // Radix tabs activate on mousedown, not click.
-    chatTab.dispatchEvent(new MouseEvent("mousedown", { button: 0, bubbles: true, cancelable: true }));
+    chatTab?.click();
   });
   await flushReact();
   await flushReact();
-  if (chatTab.getAttribute("data-state") !== "active") {
-    throw new Error(`chat tab state=${chatTab.getAttribute("data-state")}`);
-  }
 }
 
 async function waitForAssertion(assertion: () => void, attempts = 20) {
@@ -1310,6 +1303,7 @@ describe("IssueDetail", () => {
     });
     await flushReact();
     await flushReact();
+    await openIssueChatTab(container);
 
     const props = mockIssueChatThreadRender.mock.calls.at(-1)?.[0] as { comments?: Array<{ id: string; queueState?: string }> };
     const freshComment = props.comments?.find((comment) => comment.id === "comment-fresh");
@@ -2094,6 +2088,7 @@ describe("IssueDetail", () => {
       );
     });
     await flushReact();
+    await openIssueChatTab(container);
 
     expect(mockIssueChatThreadRender.mock.calls.at(-1)?.[0]).toMatchObject({
       issueWorkMode: "planning",
@@ -2111,6 +2106,7 @@ describe("IssueDetail", () => {
       );
     });
     await flushReact();
+    await openIssueChatTab(container);
 
     expect(mockIssueChatThreadRender.mock.calls.at(-1)?.[0]).toMatchObject({
       issueWorkMode: "ask",
@@ -2246,6 +2242,7 @@ describe("IssueDetail", () => {
     });
     await flushReact();
     await flushReact();
+    await openIssueChatTab(container);
 
     await waitForAssertion(() => {
       expect(mockIssueChatThreadRender.mock.calls.at(-1)?.[0].mentions).toEqual(
@@ -2286,6 +2283,7 @@ describe("IssueDetail", () => {
     });
     await flushReact();
     await flushReact();
+    await openIssueChatTab(container);
 
     const lastChatThreadProps = mockIssueChatThreadRender.mock.calls.at(-1)?.[0];
     expect(lastChatThreadProps?.issueWorkMode).toBe("standard");

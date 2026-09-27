@@ -70,6 +70,11 @@ export function Dashboard() {
     <div className="space-y-6">
       {error && <p className="text-sm text-destructive">{error.message}</p>}
 
+      <div className="space-y-1">
+        <h1 className="text-xl font-bold">Overview</h1>
+        <p className="text-sm text-muted-foreground">The queue lives in the inbox.</p>
+      </div>
+
       {hasNoAgents ? (
         <Button onClick={() => openOnboarding({ initialStep: 2, companyId: selectedCompanyId })}>
           Add an agent
@@ -110,6 +115,10 @@ export function Dashboard() {
           </Link>
         </p>
       ) : null}
+
+      <Link to="/inbox" className="inline-flex text-sm font-medium underline underline-offset-2">
+        See what needs you
+      </Link>
 
       {/* design-allow(card-pattern): class-string prop consumed by the plugin outlet */}
       <PluginSlotOutlet

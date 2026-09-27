@@ -1537,9 +1537,7 @@ export function IssueDetail() {
   const [copied, setCopied] = useState(false);
   const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
   const [fileViewerPromptOpen, setFileViewerPromptOpen] = useState(false);
-  const [detailTab, setDetailTab] = useState("chat");
-  const detailTabChosenRef = useRef(false);
-  const detailTabDefaultIssueIdRef = useRef<string | null>(null);
+  const [chosenDetailTab, setChosenDetailTab] = useState<{ issueId: string; tab: string } | null>(null);
   const [handoffFocusSignal, setHandoffFocusSignal] = useState(0);
   const [pendingApprovalAction, setPendingApprovalAction] = useState<{
     approvalId: string;
@@ -1572,13 +1570,8 @@ export function IssueDetail() {
   );
 
   const chooseDetailTab = useCallback((value: string) => {
-    detailTabChosenRef.current = true;
-    setDetailTab(value);
-  }, []);
-
-  useEffect(() => {
-    detailTabChosenRef.current = false;
-    detailTabDefaultIssueIdRef.current = null;
+    if (!issueId) return;
+    setChosenDetailTab({ issueId, tab: value });
   }, [issueId]);
 
   const { data: issue, isLoading, error } = useQuery({
@@ -1591,15 +1584,15 @@ export function IssueDetail() {
     enabled: !!issueId,
   });
 
-  useEffect(() => {
-    if (!issue || (issue.id !== issueId && issue.identifier !== issueId)) return;
-    if (detailTabDefaultIssueIdRef.current === issue.id || detailTabChosenRef.current) {
-      detailTabDefaultIssueIdRef.current = issue.id;
-      return;
-    }
-    detailTabDefaultIssueIdRef.current = issue.id;
-    setDetailTab(issue.status === "in_review" ? "chat" : "activity");
-  }, [issue, issueId]);
+  const issueMatchesRoute = !!issue && (issue.id === issueId || issue.identifier === issueId);
+  const detailTab =
+    chosenDetailTab && chosenDetailTab.issueId === issueId
+      ? chosenDetailTab.tab
+      : issueMatchesRoute && issue.status === "in_review"
+        ? "chat"
+        : issueMatchesRoute
+          ? "activity"
+          : "chat";
 
   const resolvedCompanyId = issue?.companyId ?? selectedCompanyId;
   const externalObjectsState = useIssueExternalObjects(issue?.id ?? null);
@@ -3336,7 +3329,7 @@ export function IssueDetail() {
       if (action === "focus_comment") {
         event.preventDefault();
         event.stopPropagation();
-        setDetailTab("chat");
+        chooseDetailTab("chat");
         setPendingCommentComposerFocusKey((current) => current + 1);
       }
       if (action === "open_file_viewer") {
@@ -3356,16 +3349,16 @@ export function IssueDetail() {
       document.removeEventListener("focusin", handleFocusIn, true);
       document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [fileViewerEnabled, keyboardShortcutsEnabled, navigate, sourceBreadcrumb.href]);
+  }, [chooseDetailTab, fileViewerEnabled, keyboardShortcutsEnabled, navigate, sourceBreadcrumb.href]);
 
   useEffect(() => {
     const hash = location.hash;
     if (!hash.startsWith("#document-")) return;
     const documentKey = decodeURIComponent(hash.slice("#document-".length));
     if (documentKey !== ISSUE_CONTINUATION_SUMMARY_DOCUMENT_KEY) return;
-    setDetailTab("activity");
+    chooseDetailTab("activity");
     setHandoffFocusSignal((current) => current + 1);
-  }, [location.hash]);
+  }, [chooseDetailTab, location.hash]);
 
   // Scroll + briefly highlight work-product / direct-attachment anchors so the
   // company Artifacts page (PAP-10359) can deep-link to a specific artifact in
