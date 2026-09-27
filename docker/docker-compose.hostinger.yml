@@ -1,0 +1,69 @@
+# Live board on the Hostinger VPS (project `paperclip-live`).
+# The data volumes belong to the original `docker` project and hold the real
+# instance data; they must stay external so a deploy never creates empty ones.
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: paperclip
+      POSTGRES_PASSWORD: paperclip
+      POSTGRES_DB: paperclip
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paperclip -d paperclip"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backup:
+    image: postgres:17-alpine
+    environment:
+      PGPASSWORD: paperclip
+    command:
+      - sh
+      - -c
+      - >-
+        mkdir -p /paperclip/pre-upgrade &&
+        pg_dump -h db -U paperclip -d paperclip -Fc -f /paperclip/pre-upgrade/paperclip-$$(date +%Y%m%d-%H%M%S).dump &&
+        ls -t /paperclip/pre-upgrade/*.dump | tail -n +15 | xargs -r rm -f &&
+        ls -la /paperclip/pre-upgrade
+    volumes:
+      - paperclip-data:/paperclip
+    depends_on:
+      db:
+        condition: service_healthy
+
+  server:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: production
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    environment:
+      DATABASE_URL: postgres://paperclip:paperclip@db:5432/paperclip
+      PORT: "3100"
+      SERVE_UI: "true"
+      PAPERCLIP_DEPLOYMENT_MODE: "authenticated"
+      PAPERCLIP_DEPLOYMENT_EXPOSURE: "private"
+      PAPERCLIP_PUBLIC_URL: "http://srv1451461.hstgr.cloud:3100"
+      PAPERCLIP_ALLOWED_HOSTNAMES: "srv1451461.hstgr.cloud,187.77.131.124"
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET must be set}"
+    volumes:
+      - paperclip-data:/paperclip
+    depends_on:
+      db:
+        condition: service_healthy
+      backup:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
+    external: true
+    name: docker_pgdata
+  paperclip-data:
+    external: true
+    name: docker_paperclip-data

@@ -5,113 +5,89 @@ on:
     branches: [master]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-hostinger
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PROJECT: paperclip-live
+      HEALTH_URL: http://srv1451461.hstgr.cloud:3100/api/health
     steps:
       - uses: actions/checkout@v5
 
-      - name: Resolve deploy environment
-        id: deploy-env
+      - name: Require the live auth secret
         env:
-          EXISTING_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
         run: |
-          set -euo pipefail
-          if [ -n "${EXISTING_AUTH_SECRET}" ]; then
-            secret="${EXISTING_AUTH_SECRET}"
-          else
-            secret="$(openssl rand -hex 32)"
-          fi
-          echo "::add-mask::${secret}"
-          echo "secret=${secret}" >> "$GITHUB_OUTPUT"
-
-      - name: Read Hostinger project state
-        env:
-          HOSTINGER_API_KEY: ${{ secrets.HOSTINGER_API_KEY }}
-        run: |
-          set -euo pipefail
-          auth=( -H "Authorization: Bearer ${HOSTINGER_API_KEY}" -H "Accept: application/json" )
-          base="https://developers.hostinger.com/api/vps/v1/virtual-machines/${{ vars.HOSTINGER_VM_ID }}"
-
-          echo "=== projects ==="
-          code=$(curl -sS --connect-timeout 20 --max-time 90 -w '%{http_code}' -o /tmp/projects.json "${auth[@]}" "$base/docker" || echo curl_failed)
-          echo "http ${code}"
-          jq 'if type=="array" then map({name, status, state, containers: ((.containers // []) | map({name, image, status, state, health}))}) else . end' /tmp/projects.json
-
-          echo "=== paperclip-custom logs ==="
-          code=$(curl -sS --connect-timeout 20 --max-time 90 -w '%{http_code}' -o /tmp/logs.json "${auth[@]}" "$base/docker/paperclip-custom/logs" || echo curl_failed)
-          echo "http ${code}"
-          jq '
-            if type=="array" then
-              [.[] | {service, tail: ((.entries // []) | .[-30:] | map(.message // .content // .log // .))}]
-            else . end
-          ' /tmp/logs.json
-
-      - name: Switch the live board to the built image
-        if: contains(github.event.head_commit.message, '[cutover]')
-        env:
-          HOSTINGER_API_KEY: ${{ secrets.HOSTINGER_API_KEY }}
-        run: |
-          set -euo pipefail
-          auth=( -H "Authorization: Bearer ${HOSTINGER_API_KEY}" -H "Accept: application/json" -H "Content-Type: application/json" )
-          base="https://developers.hostinger.com/api/vps/v1/virtual-machines/${{ vars.HOSTINGER_VM_ID }}/docker"
-
-          for project in docker paperclip; do
-            code=$(curl -sS --connect-timeout 20 --max-time 120 -o /tmp/stop.json -w '%{http_code}' -X POST "${auth[@]}" "$base/${project}/stop" || echo curl_failed)
-            echo "stop ${project} -> ${code}"
-          done
-
-          running="pending"
-          for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
-            curl -sS --connect-timeout 20 --max-time 60 -o /tmp/projects.json "${auth[@]}" "$base" || true
-            running=$(jq -r 'if type=="array" then [.[] | select(.name=="docker" or .name=="paperclip") | .containers[]? | select((.status // "") | test("Up")) | .name] | join(" ") else "unparsed" end' /tmp/projects.json || echo jq_failed)
-            echo "old containers still up: ${running:-none}"
-            if [ -z "$running" ]; then
-              break
-            fi
-            sleep 5
-          done
-          if [ -n "$running" ]; then
-            echo "The old board did not release its ports."
+          if [ -z "${BETTER_AUTH_SECRET}" ]; then
+            echo "::error::BETTER_AUTH_SECRET is not set. Set it to the secret the live board runs with; a new one would sign everyone out."
             exit 1
           fi
 
-          code=$(curl -sS --connect-timeout 20 --max-time 120 -o /tmp/start.json -w '%{http_code}' -X POST "${auth[@]}" "$base/paperclip-custom/start" || echo curl_failed)
-          echo "start paperclip-custom -> ${code}"
-          jq . /tmp/start.json || true
-          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
-            echo "Could not start the new board."
-            exit 1
-          fi
-
-          ok=0
-          for _ in $(seq 1 40); do
-            if curl -fsS --connect-timeout 5 --max-time 15 http://srv1451461.hstgr.cloud:3100/api/health; then
-              echo
-              ok=1
-              break
-            fi
-            sleep 5
-          done
-          if [ "$ok" != 1 ]; then
-            echo "The new board did not answer health checks."
-            exit 1
-          fi
+      - name: Record deploy start
+        id: start
+        run: echo "at=$(date -u +%Y-%m-%dT%H:%M:%S)" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to Hostinger
-        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[deploy]')
         uses: hostinger/deploy-on-vps@v2
         with:
           api-key: ${{ secrets.HOSTINGER_API_KEY }}
           virtual-machine: ${{ vars.HOSTINGER_VM_ID }}
-          project-name: paperclip-custom
-          docker-compose-path: docker/docker-compose.yml
+          project-name: ${{ env.PROJECT }}
+          docker-compose-path: docker/docker-compose.hostinger.yml
           environment-variables: |
-            BETTER_AUTH_SECRET=${{ steps.deploy-env.outputs.secret }}
-            PAPERCLIP_PUBLIC_URL=http://srv1451461.hstgr.cloud:3100
-            PAPERCLIP_ALLOWED_HOSTNAMES=srv1451461.hstgr.cloud,187.77.131.124
-            PAPERCLIP_DEPLOYMENT_MODE=authenticated
-            PAPERCLIP_DEPLOYMENT_EXPOSURE=public
-            PAPERCLIP_TOOL_ACTION_SIGNING_SECRET=${{ secrets.PAPERCLIP_TOOL_ACTION_SIGNING_SECRET }}
-            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}
+
+      - name: Wait for the build and health
+        env:
+          HOSTINGER_API_KEY: ${{ secrets.HOSTINGER_API_KEY }}
+          START: ${{ steps.start.outputs.at }}
+        run: |
+          set -uo pipefail
+          auth=( -H "Authorization: Bearer ${HOSTINGER_API_KEY}" -H "Accept: application/json" )
+          logs_url="https://developers.hostinger.com/api/vps/v1/virtual-machines/${{ vars.HOSTINGER_VM_ID }}/docker/${PROJECT}/logs"
+
+          build_lines() {
+            curl -sS --connect-timeout 20 --max-time 60 "${auth[@]}" "$logs_url" -o /tmp/logs.json || return 0
+            jq -r --arg start "$START" '
+              .[]? | select(.service == "[build]") | .entries[]? | .line
+              | select(.[0:19] >= $start)
+            ' /tmp/logs.json 2>/dev/null || true
+          }
+
+          result=""
+          for _ in $(seq 1 48); do
+            lines="$(build_lines)"
+            if printf '%s\n' "$lines" | grep -q "Project deployed successfully"; then
+              result=deployed
+              break
+            fi
+            if printf '%s\n' "$lines" | grep -Eqi "deployment failed|build failed"; then
+              result=failed
+              break
+            fi
+            sleep 15
+          done
+          printf '%s\n' "$(build_lines)" | tail -n 40
+
+          if [ "$result" != deployed ]; then
+            echo "::error::Hostinger did not finish deploying ${PROJECT} (result: ${result:-timeout})."
+            jq -r '.[]? | select(.service != "[build]") | .service as $s | .entries[-30:][]? | "\($s): \(.line)"' /tmp/logs.json || true
+            exit 1
+          fi
+
+          for _ in $(seq 1 24); do
+            if curl -fsS --connect-timeout 5 --max-time 10 "$HEALTH_URL"; then
+              echo
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::The board did not answer ${HEALTH_URL} after deploy."
+          curl -sS --connect-timeout 20 --max-time 60 "${auth[@]}" "$logs_url" -o /tmp/logs.json || true
+          jq -r '.[]? | select(.service | startswith("server")) | .entries[-40:][]? | .line' /tmp/logs.json || true
+          exit 1
