@@ -15,3 +15,13 @@ the same sans-serif text stack without relying on host font packages.
 
 Redistribution note: Inter is redistributed under the SIL Open Font License 1.1.
 The bundled WOFF2 files are included unmodified from the upstream v4.1 release.
+
+## Instrument Serif
+
+Display face for greetings and page titles (`--font-display`).
+
+- Upstream project: https://github.com/Instrument/instrument-serif
+- Source files (Fontsource latin subset):
+  - https://cdn.jsdelivr.net/fontsource/fonts/instrument-serif@latest/latin-400-normal.woff2
+  - https://cdn.jsdelivr.net/fontsource/fonts/instrument-serif@latest/latin-400-italic.woff2
+- License: SIL Open Font License 1.1

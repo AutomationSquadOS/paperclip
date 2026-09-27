@@ -1,4 +1,5 @@
 import { Navigate, Outlet, useLocation } from "@/lib/router";
+import { AppLoading } from "./AppLoading";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { accessApi } from "@/api/access";
 import { ApiError } from "@/api/client";
@@ -74,7 +75,7 @@ export function CloudAccessGate() {
     (isAuthenticatedMode && sessionQuery.isLoading) ||
     (isAuthenticatedMode && !isBootstrapPending && !!sessionQuery.data && boardAccessQuery.isLoading)
   ) {
-    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
+    return <AppLoading />;
   }
 
   if (healthQuery.error || boardAccessQuery.error) {
@@ -92,7 +93,7 @@ export function CloudAccessGate() {
   if (isBootstrapPending) {
     const health = healthQuery.data;
     if (!health) {
-      return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
+      return <AppLoading />;
     }
     const claimError = claimMutation.error instanceof ApiError
       ? { status: claimMutation.error.status, message: claimMutation.error.message }
