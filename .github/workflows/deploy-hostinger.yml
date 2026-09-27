@@ -47,6 +47,57 @@ jobs:
             else . end
           ' /tmp/logs.json
 
+      - name: Switch the live board to the built image
+        if: contains(github.event.head_commit.message, '[cutover]')
+        env:
+          HOSTINGER_API_KEY: ${{ secrets.HOSTINGER_API_KEY }}
+        run: |
+          set -euo pipefail
+          auth=( -H "Authorization: Bearer ${HOSTINGER_API_KEY}" -H "Accept: application/json" -H "Content-Type: application/json" )
+          base="https://developers.hostinger.com/api/vps/v1/virtual-machines/${{ vars.HOSTINGER_VM_ID }}/docker"
+
+          for project in docker paperclip; do
+            code=$(curl -sS --connect-timeout 20 --max-time 120 -o /tmp/stop.json -w '%{http_code}' -X POST "${auth[@]}" "$base/${project}/stop" || echo curl_failed)
+            echo "stop ${project} -> ${code}"
+          done
+
+          running="pending"
+          for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            curl -sS --connect-timeout 20 --max-time 60 -o /tmp/projects.json "${auth[@]}" "$base" || true
+            running=$(jq -r 'if type=="array" then [.[] | select(.name=="docker" or .name=="paperclip") | .containers[]? | select((.status // "") | test("Up")) | .name] | join(" ") else "unparsed" end' /tmp/projects.json || echo jq_failed)
+            echo "old containers still up: ${running:-none}"
+            if [ -z "$running" ]; then
+              break
+            fi
+            sleep 5
+          done
+          if [ -n "$running" ]; then
+            echo "The old board did not release its ports."
+            exit 1
+          fi
+
+          code=$(curl -sS --connect-timeout 20 --max-time 120 -o /tmp/start.json -w '%{http_code}' -X POST "${auth[@]}" "$base/paperclip-custom/start" || echo curl_failed)
+          echo "start paperclip-custom -> ${code}"
+          jq . /tmp/start.json || true
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+            echo "Could not start the new board."
+            exit 1
+          fi
+
+          ok=0
+          for _ in $(seq 1 40); do
+            if curl -fsS --connect-timeout 5 --max-time 15 http://srv1451461.hstgr.cloud:3100/api/health; then
+              echo
+              ok=1
+              break
+            fi
+            sleep 5
+          done
+          if [ "$ok" != 1 ]; then
+            echo "The new board did not answer health checks."
+            exit 1
+          fi
+
       - name: Deploy to Hostinger
         if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[deploy]')
         uses: hostinger/deploy-on-vps@v2
