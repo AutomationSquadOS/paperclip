@@ -25,7 +25,30 @@ jobs:
           echo "::add-mask::${secret}"
           echo "secret=${secret}" >> "$GITHUB_OUTPUT"
 
+      - name: Read Hostinger project state
+        env:
+          HOSTINGER_API_KEY: ${{ secrets.HOSTINGER_API_KEY }}
+        run: |
+          set -euo pipefail
+          auth=( -H "Authorization: Bearer ${HOSTINGER_API_KEY}" -H "Accept: application/json" )
+          base="https://developers.hostinger.com/api/vps/v1/virtual-machines/${{ vars.HOSTINGER_VM_ID }}"
+
+          echo "=== projects ==="
+          code=$(curl -sS --connect-timeout 20 --max-time 90 -w '%{http_code}' -o /tmp/projects.json "${auth[@]}" "$base/docker" || echo curl_failed)
+          echo "http ${code}"
+          jq 'if type=="array" then map({name, status, state, containers: ((.containers // []) | map({name, image, status, state, health}))}) else . end' /tmp/projects.json
+
+          echo "=== paperclip-custom logs ==="
+          code=$(curl -sS --connect-timeout 20 --max-time 90 -w '%{http_code}' -o /tmp/logs.json "${auth[@]}" "$base/docker/paperclip-custom/logs" || echo curl_failed)
+          echo "http ${code}"
+          jq '
+            if type=="array" then
+              [.[] | {service, tail: ((.entries // []) | .[-30:] | map(.message // .content // .log // .))}]
+            else . end
+          ' /tmp/logs.json
+
       - name: Deploy to Hostinger
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[deploy]')
         uses: hostinger/deploy-on-vps@v2
         with:
           api-key: ${{ secrets.HOSTINGER_API_KEY }}
@@ -34,8 +57,8 @@ jobs:
           docker-compose-path: docker/docker-compose.yml
           environment-variables: |
             BETTER_AUTH_SECRET=${{ steps.deploy-env.outputs.secret }}
-            PAPERCLIP_PUBLIC_URL=http://187.77.131.124:3100
-            PAPERCLIP_ALLOWED_HOSTNAMES=187.77.131.124
+            PAPERCLIP_PUBLIC_URL=http://srv1451461.hstgr.cloud:3100
+            PAPERCLIP_ALLOWED_HOSTNAMES=srv1451461.hstgr.cloud,187.77.131.124
             PAPERCLIP_DEPLOYMENT_MODE=authenticated
             PAPERCLIP_DEPLOYMENT_EXPOSURE=public
             PAPERCLIP_TOOL_ACTION_SIGNING_SECRET=${{ secrets.PAPERCLIP_TOOL_ACTION_SIGNING_SECRET }}
