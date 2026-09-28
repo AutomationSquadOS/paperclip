@@ -52,6 +52,10 @@ services:
       PAPERCLIP_PUBLIC_URL: "http://srv1451461.hstgr.cloud:3100"
       PAPERCLIP_ALLOWED_HOSTNAMES: "srv1451461.hstgr.cloud,187.77.131.124"
       BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET must be set}"
+      PAPERCLIP_FALLBACK_CURSOR_TO_CLAUDE: "1"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      CURSOR_API_KEY: "${CURSOR_API_KEY:-}"
     volumes:
       - paperclip-data:/paperclip
     depends_on:

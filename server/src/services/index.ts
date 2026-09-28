@@ -161,5 +161,9 @@ export {
   reconcileCodexLocalManagedHomesOnStartup,
   type CodexAuthReconciliationSummary,
 } from "./codex-auth-reconciliation.js";
+export {
+  reconcileCursorAdapterFallbackOnStartup,
+  type CursorAdapterFallbackSummary,
+} from "./cursor-adapter-fallback.js";
 export { reconcilePersistedRuntimeServicesOnStartup, restartDesiredRuntimeServicesOnStartup } from "./workspace-runtime.js";
 export { createStorageServiceFromConfig, getStorageService } from "../storage/index.js";

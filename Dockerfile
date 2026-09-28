@@ -70,7 +70,13 @@ RUN npm install --global --omit=dev @anthropic-ai/claude-code@latest @openai/cod
   && apt-get install -y --no-install-recommends openssh-client jq \
   && rm -rf /var/lib/apt/lists/* \
   && mkdir -p /paperclip \
-  && chown node:node /paperclip
+  && chown node:node /paperclip \
+  && (curl -fsSL https://cursor.com/install | bash \
+      && for d in /root/.local/bin /root/.cursor/bin; do \
+           if [ -x "$d/agent" ]; then cp -f "$d/agent" /usr/local/bin/agent; fi; \
+           if [ -x "$d/cursor-agent" ]; then cp -f "$d/cursor-agent" /usr/local/bin/cursor-agent; fi; \
+         done \
+      || echo "cursor CLI install skipped; Claude Code remains available")
 
 COPY scripts/docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
