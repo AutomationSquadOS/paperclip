@@ -494,6 +494,8 @@ export interface IssueFilters {
   inboxArchivedByUserId?: string;
   unreadForUserId?: string;
   projectId?: string;
+  goalId?: string;
+  withoutProject?: boolean;
   workspaceId?: string;
   executionWorkspaceId?: string;
   parentId?: string;
@@ -3610,6 +3612,8 @@ async function blockedInboxIssueConditions(
   if (inboxArchivedByUserId) conditions.push(inboxVisibleForUserCondition(companyId, inboxArchivedByUserId));
   if (unreadForUserId) conditions.push(unreadForUserCondition(companyId, unreadForUserId));
   if (filters?.projectId) conditions.push(eq(issues.projectId, filters.projectId));
+  if (filters?.goalId) conditions.push(eq(issues.goalId, filters.goalId));
+  if (filters?.withoutProject) conditions.push(isNull(issues.projectId));
   if (filters?.workspaceId) {
     conditions.push(or(
       eq(issues.executionWorkspaceId, filters.workspaceId),
@@ -4916,6 +4920,8 @@ export function issueService(db: Db) {
         conditions.push(unreadForUserCondition(companyId, unreadForUserId));
       }
       if (filters?.projectId) conditions.push(eq(issues.projectId, filters.projectId));
+      if (filters?.goalId) conditions.push(eq(issues.goalId, filters.goalId));
+      if (filters?.withoutProject) conditions.push(isNull(issues.projectId));
       if (filters?.workspaceId) {
         conditions.push(or(
           eq(issues.executionWorkspaceId, filters.workspaceId),
@@ -5099,6 +5105,8 @@ export function issueService(db: Db) {
       }
       if (filters?.assigneeUserId) conditions.push(eq(issues.assigneeUserId, filters.assigneeUserId));
       if (filters?.projectId) conditions.push(eq(issues.projectId, filters.projectId));
+      if (filters?.goalId) conditions.push(eq(issues.goalId, filters.goalId));
+      if (filters?.withoutProject) conditions.push(isNull(issues.projectId));
       if (filters?.workspaceId) {
         conditions.push(or(
           eq(issues.executionWorkspaceId, filters.workspaceId),

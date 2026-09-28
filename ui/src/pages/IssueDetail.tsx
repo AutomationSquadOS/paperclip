@@ -83,6 +83,7 @@ import { relativeTime, cn, formatDurationMs, formatTokens, visibleRunCostUsd } f
 import { liveBlueBadge } from "../lib/status-colors";
 import { ApprovalCard } from "../components/ApprovalCard";
 import { InlineEditor } from "../components/InlineEditor";
+import { WorkPath } from "../components/GoalProgress";
 import {
   IssueChatThread,
   type IssueChatComposerHandle,
@@ -4078,6 +4079,7 @@ export function IssueDetail() {
   return (
     <FileViewerProvider issueId={issue.id} enabled={fileViewerEnabled}>
     <div className="max-w-3xl space-y-6">
+      <WorkPath issue={issue} />
       {/* Parent chain breadcrumb */}
       {ancestors.length > 0 && (
         <nav className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">

@@ -129,8 +129,6 @@ export function Sidebar() {
   const showApps = experimentalSettings?.enableApps === true;
   const showPipelines = experimentalSettings?.enablePipelines === true;
   const showStatusCards = experimentalSettings?.enableStatusCards === true;
-  const goalsLinkPending = experimentalSettings === undefined;
-  const showGoalsLink = experimentalSettings?.enableGoalsSidebarLink === true;
   const showCases = experimentalSettings?.enableCases === true;
   // Streamlined left navigation (top-level Projects link + starred children) is
   // now the standard product sidebar (PAP-12472). The former experimental
@@ -259,6 +257,13 @@ export function Sidebar() {
         </div>
 
         <SidebarSection label="Work" collapsible={{ open: workOpen, onOpenChange: setWorkOpen }}>
+          <SidebarNavItem to="/goals" label="Goals" icon={Target} />
+          {streamlined ? (
+            <>
+              <SidebarNavItem to="/projects" label="Projects" icon={FolderOpen} />
+              <SidebarStarredProjects />
+            </>
+          ) : null}
           <SidebarNavItem to="/issues" label="Tasks" icon={CircleDot} />
           <SidebarDisclosure
             label="More"
@@ -267,15 +272,6 @@ export function Sidebar() {
             onOpenChange={setWorkMoreOpen}
           >
             <SidebarNavItem to="/routines" label="Routines" icon={Repeat} />
-            {showGoalsLink ? (
-              <SidebarNavItem to="/goals" label="Goals" icon={Target} />
-            ) : goalsLinkPending ? (
-              <div
-                data-testid="sidebar-goals-placeholder"
-                className="h-8 pointer-coarse:h-7"
-                aria-hidden="true"
-              />
-            ) : null}
             <SidebarNavItem to="/artifacts" label="Artifacts" icon={Package} />
             <SidebarNavItem to="/skills" label="Skills" icon={Boxes} />
             {showWorkspacesLink ? (
@@ -286,12 +282,6 @@ export function Sidebar() {
             ) : null}
             {showCases ? (
               <SidebarNavItem to="/cases" label="Cases" icon={Layers} textBadge="beta" />
-            ) : null}
-            {streamlined ? (
-              <>
-                <SidebarNavItem to="/projects" label="Projects" icon={FolderOpen} />
-                <SidebarStarredProjects />
-              </>
             ) : null}
           </SidebarDisclosure>
           <PluginSlotOutlet

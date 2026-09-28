@@ -197,8 +197,12 @@ Invariant: plaintext key shown once at creation; only hash stored.
 - `parent_id` uuid fk `goals.id` null
 - `owner_agent_id` uuid fk `agents.id` null
 - `status` enum: `planned | active | achieved | cancelled`
+- `horizon` enum null: `long_term | year | quarter` (time horizon; `level` stays the scope)
+- `target_date` date null
 
 Invariant: at least one root `company` level goal per company.
+
+Progress rolls up Task → Project → Goal → parent Goal (see `doc/plans/2026-09-27-goal-first-workflow.md`); tasks with no project surface in a computed "Not in a project yet" bucket, never rewritten.
 
 ## 7.5 `projects`
 
@@ -823,6 +827,7 @@ All endpoints are under `/api` and return JSON.
 ## 10.2 Goals
 
 - `GET /companies/:companyId/goals`
+- `GET /companies/:companyId/goals/overview` (progress rollups, health, unplanned bucket, 7-day summary)
 - `POST /companies/:companyId/goals`
 - `GET /goals/:goalId`
 - `PATCH /goals/:goalId`

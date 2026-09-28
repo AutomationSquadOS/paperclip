@@ -191,7 +191,7 @@ describe("Sidebar", () => {
     }
     expect(workSectionContainer?.textContent).toContain("Work");
     expect(workSectionContainer?.textContent).toContain("Tasks");
-    expect(workSectionContainer?.textContent).not.toContain("Goals");
+    expect(workSectionContainer?.textContent).toContain("Goals");
 
     flushSync(() => {
       root.unmount();
@@ -362,36 +362,10 @@ describe("Sidebar", () => {
     });
   });
 
-  it("hides the Goals nav item by default", async () => {
+  it("leads the Work section with Goals, then Projects, then Tasks", async () => {
     mockInstanceSettingsApi.getExperimental.mockResolvedValue({
       enableIsolatedWorkspaces: false,
       enableGoalsSidebarLink: false,
-    });
-    const root = await renderSidebar();
-
-    expect([...container.querySelectorAll("nav a")].map((a) => a.textContent?.trim())).not.toContain("Goals");
-
-    flushSync(() => {
-      root.unmount();
-    });
-  });
-
-  it("reserves the Goals nav slot while experimental settings are loading", async () => {
-    mockInstanceSettingsApi.getExperimental.mockImplementation(() => new Promise(() => {}));
-    const root = await renderSidebar();
-
-    expect([...container.querySelectorAll("nav a")].map((a) => a.textContent?.trim())).not.toContain("Goals");
-    expect(container.querySelector('[data-testid="sidebar-goals-placeholder"]')).not.toBeNull();
-
-    flushSync(() => {
-      root.unmount();
-    });
-  });
-
-  it("shows the Goals nav item when the experimental setting is enabled", async () => {
-    mockInstanceSettingsApi.getExperimental.mockResolvedValue({
-      enableIsolatedWorkspaces: false,
-      enableGoalsSidebarLink: true,
     });
     const root = await renderSidebar();
 
@@ -399,7 +373,8 @@ describe("Sidebar", () => {
     expect(link?.getAttribute("href")).toBe("/goals");
 
     const navText = container.querySelector("nav")?.textContent ?? "";
-    expect(navText.indexOf("Goals")).toBeLessThan(navText.indexOf("Artifacts"));
+    expect(navText.indexOf("Goals")).toBeLessThan(navText.indexOf("Projects"));
+    expect(navText.indexOf("Projects")).toBeLessThan(navText.indexOf("Tasks"));
 
     flushSync(() => {
       root.unmount();

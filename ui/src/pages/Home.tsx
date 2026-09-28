@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { Agent, AgentStatus, Approval, Issue } from "@paperclipai/shared";
+import type { Agent, AgentStatus, Approval, GoalOverview, Issue } from "@paperclipai/shared";
 import {
   ArrowRight,
   Check,
@@ -12,6 +12,7 @@ import {
   PartyPopper,
   PauseCircle,
   Sparkles,
+  Target,
   UserPlus,
   Users,
   type LucideIcon,
@@ -22,12 +23,16 @@ import { agentsApi } from "../api/agents";
 import { approvalsApi } from "../api/approvals";
 import { authApi } from "../api/auth";
 import { dashboardApi } from "../api/dashboard";
+import { goalsApi } from "../api/goals";
 import { heartbeatsApi } from "../api/heartbeats";
 import { issuesApi } from "../api/issues";
 import { AgentIcon } from "../components/AgentIconPicker";
 import { approvalLabel } from "../components/ApprovalPayload";
 import { EmptyState } from "../components/EmptyState";
 import { StatusIcon } from "../components/StatusIcon";
+import { WorkHealthPill, WorkProgressBar } from "../components/GoalProgress";
+import { useStartGoal } from "../hooks/useStartGoal";
+import { GOAL_HORIZON_LABEL } from "../lib/goal-hierarchy";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useCompany } from "../context/CompanyContext";
 import { useDialogActions } from "../context/DialogContext";
@@ -40,6 +45,14 @@ const TASK_IDEAS = [
   "Draft a launch announcement",
   "Plan next week's priorities",
 ];
+
+const GOAL_IDEAS = [
+  "Get our first 100 paying customers",
+  "Launch the new website this quarter",
+  "Publish two articles every week",
+];
+
+type ComposerMode = "goal" | "task";
 
 const FRIENDLY_TASK_STATUS: Record<string, string> = {
   backlog: "Not started",
@@ -86,6 +99,8 @@ export function Home() {
   const { setBreadcrumbs } = useBreadcrumbs();
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const [draft, setDraft] = useState("");
+  const [chosenMode, setChosenMode] = useState<ComposerMode | null>(null);
+  const { startGoal, isPending: goalPending, lead } = useStartGoal();
 
   useEffect(() => {
     setBreadcrumbs([{ label: "Home" }]);
@@ -100,6 +115,11 @@ export function Home() {
   const { data: dashboard } = useQuery({
     queryKey: queryKeys.dashboard(selectedCompanyId!),
     queryFn: () => dashboardApi.summary(selectedCompanyId!),
+    enabled,
+  });
+  const { data: goalOverview } = useQuery({
+    queryKey: queryKeys.goals.overview(selectedCompanyId!),
+    queryFn: () => goalsApi.overview(selectedCompanyId!),
     enabled,
   });
   const { data: agents, isLoading: agentsLoading } = useQuery({
@@ -165,12 +185,22 @@ export function Home() {
     : (recentIssues?.length ?? 0);
   const hasTasks = totalTasks > 0 || (recentIssues?.length ?? 0) > 0;
   const hasResults = (dashboard?.tasks.done ?? 0) > 0;
-  const showChecklist = !agentsLoading && !(hasAgents && hasTasks && hasResults);
+  const liveGoals = (goalOverview?.goals ?? []).filter(
+    (entry) => entry.goal.status === "active" || entry.goal.status === "planned",
+  );
+  const hasGoals = liveGoals.length > 0;
+  const mode: ComposerMode = chosenMode ?? (hasGoals ? "task" : "goal");
+  const showChecklist = !agentsLoading && !(hasAgents && (hasGoals || hasTasks) && hasResults);
   const workingCount = liveRuns?.length ?? dashboard?.agents.running ?? 0;
 
   function submitDraft(event?: FormEvent) {
     event?.preventDefault();
     const title = draft.trim();
+    if (mode === "goal") {
+      if (!title || goalPending) return;
+      startGoal({ title }, { onSuccess: () => setDraft("") });
+      return;
+    }
     openNewIssue(title ? { title } : {});
     setDraft("");
   }
@@ -195,7 +225,7 @@ export function Home() {
             </h1>
             <p className="max-w-xl text-base text-muted-foreground">
               {hasAgents
-                ? "Tell your agents what you need. They'll get to work and check in when something needs you."
+                ? "Start with a goal and your lead agent plans the projects and tasks, or hand off a single task."
                 : "Paperclip runs a team of AI agents for you. Start by hiring your first one."}
             </p>
           </div>
@@ -203,7 +233,30 @@ export function Home() {
           {hasAgents ? (
             <form onSubmit={submitDraft} className="flex flex-col gap-3">
               <div className="rounded-2xl border bg-surface-raised shadow-md transition-shadow focus-within:border-ring/60 focus-within:shadow-lg focus-within:ring-4 focus-within:ring-ring/15">
-                <label htmlFor="home-composer" className="sr-only">Describe a task for your agents</label>
+                <div role="tablist" aria-label="What are you adding?" className="flex gap-1 px-4 pt-3">
+                  {(["goal", "task"] as const).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      role="tab"
+                      aria-selected={mode === option}
+                      onClick={() => {
+                        setChosenMode(option);
+                        composerRef.current?.focus();
+                      }}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors",
+                        mode === option ? "bg-brand-soft text-brand-soft-foreground" : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {option === "goal" ? <Target className="h-3.5 w-3.5" /> : <ListTodo className="h-3.5 w-3.5" />}
+                      {option === "goal" ? "Goal" : "Task"}
+                    </button>
+                  ))}
+                </div>
+                <label htmlFor="home-composer" className="sr-only">
+                  {mode === "goal" ? "Describe a goal" : "Describe a task for your agents"}
+                </label>
                 <textarea
                   id="home-composer"
                   ref={composerRef}
@@ -211,22 +264,26 @@ export function Home() {
                   onChange={(event) => setDraft(event.target.value)}
                   onKeyDown={handleComposerKey}
                   rows={2}
-                  placeholder="What should your agents work on next?"
+                  placeholder={mode === "goal" ? "What do you want to achieve?" : "What should your agents work on next?"}
                   className="block min-h-(--home-composer-min) w-full resize-none rounded-2xl bg-transparent px-5 pt-4 text-base text-foreground outline-none placeholder:text-muted-foreground/80"
                 />
                 <div className="flex items-center justify-between gap-3 px-4 pb-3">
                   <span className="hidden text-xs text-muted-foreground sm:inline">
-                    Press Enter to continue. You'll pick who does it next.
+                    {mode === "goal"
+                      ? lead
+                        ? `${lead.name} will plan projects, tasks, hires, and budget for your OK.`
+                        : "Your lead agent will plan projects, tasks, hires, and budget for your OK."
+                      : "Press Enter to continue. You'll pick who does it next."}
                   </span>
-                  <Button type="submit" className="ml-auto rounded-full px-5">
-                    New task
+                  <Button type="submit" className="ml-auto rounded-full px-5" disabled={mode === "goal" && (goalPending || !draft.trim())}>
+                    {mode === "goal" ? (goalPending ? "Setting goal…" : "Set goal") : "New task"}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-medium text-muted-foreground">Try</span>
-                {TASK_IDEAS.map((idea) => (
+                {(mode === "goal" ? GOAL_IDEAS : TASK_IDEAS).map((idea) => (
                   <button
                     key={idea}
                     type="button"
@@ -273,11 +330,16 @@ export function Home() {
               actionLabel: "Hire",
             },
             {
-              title: "Give it a task",
-              detail: "Describe what you need in plain words.",
-              done: hasTasks,
-              action: hasAgents ? () => composerRef.current?.focus() : hireAgent,
-              actionLabel: "Write a task",
+              title: "Set your first goal",
+              detail: "Say what you want to achieve. Your lead agent plans the projects and tasks.",
+              done: hasGoals || hasTasks,
+              action: hasAgents
+                ? () => {
+                    setChosenMode("goal");
+                    composerRef.current?.focus();
+                  }
+                : hireAgent,
+              actionLabel: "Set a goal",
             },
             {
               title: "Review the result",
@@ -289,6 +351,8 @@ export function Home() {
           ]}
         />
       ) : null}
+
+      {hasAgents && goalOverview ? <GoalsCard overview={goalOverview} onStart={() => { setChosenMode("goal"); composerRef.current?.focus(); }} /> : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <NeedsYouCard approvals={pendingApprovals} blocked={dashboard?.tasks.blocked ?? 0} incidents={dashboard?.budgets.activeIncidents ?? 0} />
@@ -601,5 +665,62 @@ function RecentWorkCard({ issues, loading, onCreate }: { issues: Issue[]; loadin
         </div>
       )}
     </HomeCard>
+  );
+}
+
+function GoalsCard({ overview, onStart }: { overview: GoalOverview; onStart: () => void }) {
+  const goals = overview.goals
+    .filter((entry) => entry.goal.status === "active" || entry.goal.status === "planned")
+    .filter((entry) => !entry.goal.parentId || !overview.goals.some((other) => other.goal.id === entry.goal.parentId))
+    .slice(0, 4);
+  return (
+    <section aria-labelledby="home-goals" className="rounded-2xl border bg-card shadow-xs" data-testid="home-goals">
+      <header className="flex items-center gap-3 px-5 pt-5">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-soft text-brand-soft-foreground">
+          <Target className="h-4 w-4" />
+        </span>
+        <h2 id="home-goals" className="text-base font-semibold">Your goals</h2>
+        {overview.summary.goalsAtRisk > 0 ? (
+          <span className="ml-auto rounded-full bg-tint-peach px-2 py-0.5 text-xs font-medium text-tint-peach-foreground">
+            {overview.summary.goalsAtRisk} at risk
+          </span>
+        ) : null}
+      </header>
+      {goals.length === 0 ? (
+        <CardEmpty
+          icon={Target}
+          iconClass="bg-brand-soft text-brand-soft-foreground"
+          title="No goals yet"
+          message="Everything your agents do should move a goal forward. Set one and your lead agent will plan the work."
+          action={<Button size="sm" onClick={onStart}>Set a goal</Button>}
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-2 px-3 py-3 md:grid-cols-2">
+          {goals.map((entry) => (
+            <Link
+              key={entry.goal.id}
+              to={`/goals/${entry.goal.id}`}
+              className="flex min-w-0 flex-col gap-2 rounded-xl px-3 py-3 text-sm text-inherit no-underline transition-colors hover:bg-accent"
+            >
+              <span className="flex items-center gap-2">
+                <span className="min-w-0 flex-1 truncate font-semibold">{entry.goal.title}</span>
+                <WorkHealthPill progress={entry.progress} />
+              </span>
+              <WorkProgressBar progress={entry.progress} size="sm" />
+              <span className="text-xs text-muted-foreground">
+                {entry.goal.horizon ? `${GOAL_HORIZON_LABEL[entry.goal.horizon]} · ` : ""}
+                {entry.projectIds.length} project{entry.projectIds.length === 1 ? "" : "s"}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+      <footer className="flex items-center justify-between gap-3 border-t px-5 py-3">
+        <FooterLink to="/goals">All goals</FooterLink>
+        <span className="text-xs text-muted-foreground">
+          {overview.summary.completedLast7Days} task{overview.summary.completedLast7Days === 1 ? "" : "s"} finished this week
+        </span>
+      </footer>
+    </section>
   );
 }

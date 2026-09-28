@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import type { Goal } from "@paperclipai/shared";
-import { GOAL_STATUSES, GOAL_LEVELS } from "@paperclipai/shared";
+import { GOAL_STATUSES, GOAL_LEVELS, GOAL_HORIZONS } from "@paperclipai/shared";
+import { GOAL_HORIZON_LABEL } from "../lib/goal-hierarchy";
 import { agentsApi } from "../api/agents";
 import { goalsApi } from "../api/goals";
 import { useCompany } from "../context/CompanyContext";
@@ -35,11 +36,13 @@ function PickerButton({
   current,
   options,
   onChange,
+  formatOption = label,
   children,
 }: {
   current: string;
   options: readonly string[];
   onChange: (value: string) => void;
+  formatOption?: (value: string) => string;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -62,7 +65,7 @@ function PickerButton({
               setOpen(false);
             }}
           >
-            {label(opt)}
+            {formatOption(opt)}
           </Button>
         ))}
       </PopoverContent>
@@ -124,8 +127,46 @@ export function GoalProperties({ goal, onUpdate }: GoalPropertiesProps) {
           )}
         </PropertyRow>
 
+        <PropertyRow label="Timeframe">
+          {onUpdate ? (
+            <PickerButton
+              current={goal.horizon ?? "none"}
+              options={["none", ...GOAL_HORIZONS]}
+              formatOption={(value) => (value === "none" ? "No timeframe" : GOAL_HORIZON_LABEL[value as keyof typeof GOAL_HORIZON_LABEL])}
+              onChange={(value) => onUpdate({ horizon: value === "none" ? null : value })}
+            >
+              <span className="text-sm">{goal.horizon ? GOAL_HORIZON_LABEL[goal.horizon] : "No timeframe"}</span>
+            </PickerButton>
+          ) : (
+            <span className="text-sm">{goal.horizon ? GOAL_HORIZON_LABEL[goal.horizon] : "No timeframe"}</span>
+          )}
+        </PropertyRow>
+
+        <PropertyRow label="Target date">
+          {onUpdate ? (
+            <input
+              type="date"
+              aria-label="Target date"
+              value={goal.targetDate ?? ""}
+              onChange={(event) => onUpdate({ targetDate: event.target.value || null })}
+              className="rounded-md border bg-transparent px-2 py-0.5 text-sm"
+            />
+          ) : (
+            <span className="text-sm">{goal.targetDate ?? "None"}</span>
+          )}
+        </PropertyRow>
+
         <PropertyRow label="Owner">
-          {ownerAgent ? (
+          {onUpdate && agents && agents.length > 0 ? (
+            <PickerButton
+              current={goal.ownerAgentId ?? "none"}
+              options={["none", ...agents.filter((agent) => agent.status !== "terminated").map((agent) => agent.id)]}
+              formatOption={(value) => (value === "none" ? "No owner" : agents.find((agent) => agent.id === value)?.name ?? value)}
+              onChange={(value) => onUpdate({ ownerAgentId: value === "none" ? null : value })}
+            >
+              <span className="text-sm">{ownerAgent?.name ?? "No owner"}</span>
+            </PickerButton>
+          ) : ownerAgent ? (
             <Link
               to={agentUrl(ownerAgent)}
               className="text-sm hover:underline"

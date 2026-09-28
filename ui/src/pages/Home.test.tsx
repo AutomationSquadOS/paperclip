@@ -13,6 +13,8 @@ const mockAuthApi = vi.hoisted(() => ({ getSession: vi.fn() }));
 const mockDashboardApi = vi.hoisted(() => ({ summary: vi.fn() }));
 const mockHeartbeatsApi = vi.hoisted(() => ({ liveRunsForCompany: vi.fn() }));
 const mockIssuesApi = vi.hoisted(() => ({ list: vi.fn() }));
+const mockGoalsApi = vi.hoisted(() => ({ overview: vi.fn() }));
+const mockStartGoal = vi.hoisted(() => vi.fn());
 const mockOpenNewIssue = vi.hoisted(() => vi.fn());
 const mockOpenOnboarding = vi.hoisted(() => vi.fn());
 
@@ -40,6 +42,10 @@ vi.mock("../api/auth", () => ({ authApi: mockAuthApi }));
 vi.mock("../api/dashboard", () => ({ dashboardApi: mockDashboardApi }));
 vi.mock("../api/heartbeats", () => ({ heartbeatsApi: mockHeartbeatsApi }));
 vi.mock("../api/issues", () => ({ issuesApi: mockIssuesApi }));
+vi.mock("../api/goals", () => ({ goalsApi: mockGoalsApi }));
+vi.mock("../hooks/useStartGoal", () => ({
+  useStartGoal: () => ({ startGoal: mockStartGoal, isPending: false, lead: null }),
+}));
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -51,6 +57,26 @@ const dashboard = {
   pendingApprovals: 1,
   budgets: { activeIncidents: 0, pendingApprovals: 0, pausedAgents: 0, pausedProjects: 0 },
   runActivity: [],
+};
+
+const progress = { total: 4, done: 1, inProgress: 1, notStarted: 2, blocked: 0, cancelled: 0, completedLast7Days: 1, percentComplete: 25, health: "on_track" };
+const goalOverview = {
+  companyId: "company-1",
+  generatedAt: new Date().toISOString(),
+  goals: [
+    {
+      goal: { id: "goal-1", companyId: "company-1", title: "Reach 100 customers", description: null, level: "company", status: "active", parentId: null, ownerAgentId: "agent-1", horizon: "quarter", targetDate: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      progress,
+      directProgress: progress,
+      projectIds: ["project-1"],
+      childGoalIds: [],
+      tasksWithoutProject: 0,
+    },
+  ],
+  projects: [],
+  unplanned: { ...progress, total: 0, done: 0, inProgress: 0, notStarted: 0, percentComplete: 0, health: "not_started" },
+  projectsWithoutGoal: [],
+  summary: { completedLast7Days: 1, createdLast7Days: 2, blocked: 0, goalsAtRisk: 0, activeGoals: 1 },
 };
 
 function agent(overrides: Record<string, unknown>) {
@@ -72,6 +98,7 @@ describe("Home", () => {
     mockIssuesApi.list.mockResolvedValue([
       { id: "issue-1", identifier: "NOR-1", title: "Draft the launch announcement", status: "in_review", updatedAt: new Date().toISOString() },
     ]);
+    mockGoalsApi.overview.mockResolvedValue(goalOverview);
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -112,6 +139,9 @@ describe("Home", () => {
     expect(text).not.toContain("Summarizer");
     expect(text).toContain("Draft the launch announcement");
     expect(text).toContain("Ready for review");
+    expect(text).toContain("Your goals");
+    expect(text).toContain("Reach 100 customers");
+    expect(text).toContain("This quarter");
     expect(text).not.toContain("Get set up");
   });
 
@@ -132,6 +162,27 @@ describe("Home", () => {
     expect(mockOpenNewIssue).toHaveBeenCalledWith({ title: "Plan the fall campaign" });
   });
 
+  it("starts with a goal when the company has none yet", async () => {
+    mockAgentsApi.list.mockResolvedValue([agent({})]);
+    mockGoalsApi.overview.mockResolvedValue({ ...goalOverview, goals: [] });
+    await render();
+
+    expect(container.textContent).toContain("No goals yet");
+    const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
+    expect(textarea.placeholder).toBe("What do you want to achieve?");
+    const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
+    await act(async () => {
+      setValue.call(textarea, "Get our first 100 paying customers");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    });
+
+    expect(mockStartGoal).toHaveBeenCalledWith({ title: "Get our first 100 paying customers" }, expect.anything());
+    expect(mockOpenNewIssue).not.toHaveBeenCalled();
+  });
+
   it("guides a brand-new company to hire its first agent", async () => {
     mockAgentsApi.list.mockResolvedValue([]);
     mockDashboardApi.summary.mockResolvedValue({
@@ -141,6 +192,7 @@ describe("Home", () => {
     });
     mockApprovalsApi.list.mockResolvedValue([]);
     mockIssuesApi.list.mockResolvedValue([]);
+    mockGoalsApi.overview.mockResolvedValue({ ...goalOverview, goals: [] });
     await render();
 
     const text = container.textContent ?? "";
