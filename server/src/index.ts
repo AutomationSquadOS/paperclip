@@ -51,6 +51,7 @@ import {
   reconcileBuiltInAgentsOnStartup,
   reconcileCloudUpstreamRunsOnStartup,
   reconcileCodexLocalManagedHomesOnStartup,
+  reconcileCursorAdapterFallbackOnStartup,
   reconcilePersistedRuntimeServicesOnStartup,
   routineService,
   statusCardService,
@@ -826,6 +827,23 @@ export async function startServer(): Promise<StartedServer> {
       logger.error({ err }, "startup reconciliation of codex_local managed homes failed");
     });
 
+  let cursorAdapterFallback: Awaited<ReturnType<typeof reconcileCursorAdapterFallbackOnStartup>> = {
+    remapped: 0,
+    skipped: true,
+    agentIds: [],
+  };
+  try {
+    cursorAdapterFallback = await reconcileCursorAdapterFallbackOnStartup(db);
+    if (cursorAdapterFallback.remapped > 0) {
+      logger.warn(
+        { remapped: cursorAdapterFallback.remapped, agentIds: cursorAdapterFallback.agentIds },
+        "remapped Cursor agents to Claude Code because the Cursor CLI is missing on this host",
+      );
+    }
+  } catch (err) {
+    logger.error({ err }, "startup reconciliation of Cursor adapter fallback failed");
+  }
+
   void reconcileBuiltInAgentsOnStartup(db as any)
     .then((result) => {
       if (result.reconciled > 0 || result.unknown > 0 || result.duplicates > 0 || result.autoEnsured > 0) {
@@ -882,6 +900,17 @@ export async function startServer(): Promise<StartedServer> {
 
   if (config.heartbeatSchedulerEnabled) {
     const heartbeat = heartbeatService(db as any, { pluginWorkerManager });
+    for (const agentId of cursorAdapterFallback.agentIds) {
+      void heartbeat
+        .wakeup(agentId, {
+          source: "on_demand",
+          triggerDetail: "system",
+          reason: "cursor_adapter_fallback",
+        })
+        .catch((err) => {
+          logger.warn({ err, agentId }, "failed to wake remapped Cursor agent");
+        });
+    }
     drainHeartbeatRunsForShutdown = heartbeat.drainRunningRunsForShutdown;
     prepareHotRestartShutdown = heartbeat.prepareHotRestartShutdown;
     const environmentCustomImages = environmentCustomImageService(db as any, { pluginWorkerManager });
