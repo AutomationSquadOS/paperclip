@@ -2641,6 +2641,15 @@ registry.registerPath({
 
 registry.registerPath({
   method: "get",
+  path: "/api/companies/{companyId}/goals/overview",
+  tags: ["goals"],
+  summary: "Goal → project → task progress rollups, health, and weekly summary",
+  request: { params: z.object({ companyId: z.string() }) },
+  responses: { 200: r.ok(), 401: r.unauthorized },
+});
+
+registry.registerPath({
+  method: "get",
   path: "/api/goals/{id}",
   tags: ["goals"],
   summary: "Get a goal",

@@ -495,6 +495,12 @@ export type GoalLevel = (typeof GOAL_LEVELS)[number];
 export const GOAL_STATUSES = ["planned", "active", "achieved", "cancelled"] as const;
 export type GoalStatus = (typeof GOAL_STATUSES)[number];
 
+export const GOAL_HORIZONS = ["long_term", "year", "quarter"] as const;
+export type GoalHorizon = (typeof GOAL_HORIZONS)[number];
+
+export const WORK_HEALTH_STATES = ["not_started", "on_track", "at_risk", "off_track", "done"] as const;
+export type WorkHealth = (typeof WORK_HEALTH_STATES)[number];
+
 export const PROJECT_STATUSES = [
   "backlog",
   "planned",

@@ -309,26 +309,11 @@ describe("InstanceExperimentalSettings — Conference Room Chat card (PAP-11233)
     expect(toggle?.getAttribute("aria-checked")).toBe("true");
   });
 
-  it("renders and patches the Goals Sidebar Link experimental toggle", async () => {
+  it("no longer offers the retired Goals Sidebar Link toggle (Goals is always in the sidebar)", async () => {
     await renderPage();
 
-    expect(container.textContent).toContain("Goals Sidebar Link");
-    expect(container.textContent).toContain(
-      "Restore the Goals item in the main sidebar while the goals surface is being evaluated.",
-    );
-
-    const toggle = container.querySelector<HTMLButtonElement>(GOALS_SIDEBAR_LINK_TOGGLE_SELECTOR);
-    expect(toggle?.getAttribute("aria-checked")).toBe("false");
-
-    await act(async () => {
-      toggle?.click();
-    });
-    await flushReact();
-
-    expect(mockInstanceSettingsApi.updateExperimental).toHaveBeenCalledWith({
-      enableGoalsSidebarLink: true,
-    });
-    expect(toggle?.getAttribute("aria-checked")).toBe("true");
+    expect(container.textContent).not.toContain("Goals Sidebar Link");
+    expect(container.querySelector(GOALS_SIDEBAR_LINK_TOGGLE_SELECTOR)).toBeNull();
   });
 
   it("hides the worktree run-execution toggle when not running in a worktree", async () => {

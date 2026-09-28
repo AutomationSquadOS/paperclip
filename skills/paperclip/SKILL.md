@@ -159,7 +159,25 @@ Because of that, follow these rules:
 - **Never imply a live watcher on a task you are marking `done`.** `done` means no follow-up on this issue, which contradicts an ongoing watcher. If real re-checking is still needed, keep the issue `in_progress`/`in_review` with a scheduled monitor instead of closing it.
 - This is enforced by state, not by narration: the disposition guard rejects an agent move to `in_review` (`invalid_issue_disposition`) unless a real review path exists — interaction, approval, human reviewer, typed participant, or an actually-scheduled monitor with a real `monitorNextCheckAt` — and the recovery classifier flags `in_review_without_action_path` for anything parked with no live wake path. Keep your comments consistent with that real state.
 
-**Step 9 — Delegate if needed.** Create subtasks with `POST /api/companies/{companyId}/issues`. Always set `parentId` and `goalId`. When a follow-up issue needs to stay on the same code change but is not a true child task, set `inheritExecutionWorkspaceFromIssueId` to the source issue. Set `billingCode` for cross-team work.
+**Step 9 — Delegate if needed.** Create subtasks with `POST /api/companies/{companyId}/issues`. Always set `parentId`, `projectId`, and `goalId` (copy them from the parent task). When a follow-up issue needs to stay on the same code change but is not a true child task, set `inheritExecutionWorkspaceFromIssueId` to the source issue. Set `billingCode` for cross-team work.
+
+## Goal-First Work (Goal → Project → Task)
+
+Work is organized top-down: **goals** (outcomes, optionally `horizon: long_term | year | quarter` and a `targetDate`) are moved forward by **projects** (objectives + success criteria, a `leadAgentId`), which are moved forward by **tasks** (one assignee each, optional subtasks). Progress rolls back up automatically: `GET /api/companies/{companyId}/goals/overview` returns each goal's and project's percent complete, health (`not_started | on_track | at_risk | off_track | done`), stuck counts, and a 7-day summary.
+
+- **Every task you create must carry `projectId` and `goalId`.** When delegating, copy both from the parent. A project may serve several goals (`goalIds`).
+- **Work with no project** lands in the board's "Not in a project yet" bucket. If you pick one up, set the best-matching `projectId` (and its goal) before starting, or ask the goal owner in a comment.
+- **Ownership follows the org chart:** goal `ownerAgentId` → project `leadAgentId` → task assignee. Owners report status on their level; managers read their reports' rollups from the overview endpoint.
+- Filter a goal's or the unplanned tasks with `GET /api/companies/{companyId}/issues?goalId={goalId}` or `?withoutProject=true`.
+
+### Planning a goal ("here's a goal")
+
+When the board sets a goal, the company lead gets a task titled `Plan the goal: …` linked to it. Do this, in order:
+
+1. Write the `plan` issue document: 1–4 projects (objective, success criteria, lead, target date), first tasks per project with owners, hires needed (role, reason, reporting line), and a monthly budget recommendation.
+2. Submit it for board approval: `POST /api/companies/{companyId}/approvals` with `type: "approve_ceo_strategy"`, `issueIds: [planningTaskId]`, and a payload such as `{ "goalId", "summary", "projects": [...], "hires": [...], "budgetRecommendation": { "monthlyCents", "notes" } }`. Move the planning task to `in_review` while you wait.
+3. After approval, create each project with `goalIds: [goalId]` and `leadAgentId`, then create tasks inside it with `projectId` + `goalId` + an assignee. Request hires through the normal hire flow (it creates `hire_agent` approvals when required), and budget changes through the normal budget/approval paths. Never bypass an approval or a budget hard stop.
+4. Comment with links to the projects you created and mark the planning task `done`.
 
 ## Managing A User's Inbox
 

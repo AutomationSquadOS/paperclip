@@ -41,6 +41,8 @@ export type IssueListFilters = {
   attention?: "blocked";
   status?: string;
   projectId?: string;
+  goalId?: string;
+  withoutProject?: boolean;
   parentId?: string;
   assigneeAgentId?: string;
   participantAgentId?: string;
@@ -73,6 +75,8 @@ function issueListSearchParams(filters?: IssueListFilters) {
   if (filters?.attention) params.set("attention", filters.attention);
   if (filters?.status) params.set("status", filters.status);
   if (filters?.projectId) params.set("projectId", filters.projectId);
+  if (filters?.goalId) params.set("goalId", filters.goalId);
+  if (filters?.withoutProject) params.set("withoutProject", "true");
   if (filters?.parentId) params.set("parentId", filters.parentId);
   if (filters?.assigneeAgentId) params.set("assigneeAgentId", filters.assigneeAgentId);
   if (filters?.participantAgentId) params.set("participantAgentId", filters.participantAgentId);

@@ -17,6 +17,7 @@ import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
 import { ProjectProperties, type ProjectConfigFieldKey, type ProjectFieldSaveState } from "../components/ProjectProperties";
 import { InlineEditor } from "../components/InlineEditor";
+import { ProjectGoalProgress } from "../components/GoalProgress";
 import { StatusBadge } from "../components/StatusBadge";
 import { ProjectTile } from "../components/ProjectTile";
 import { BudgetPolicyCard } from "../components/BudgetPolicyCard";
@@ -830,6 +831,8 @@ export function ProjectDetail() {
           />
         </div>
       </div>
+
+      <ProjectGoalProgress companyId={resolvedCompanyId} projectId={project.id} />
 
       <SummarySlotCard
         companyId={resolvedCompanyId}

@@ -378,7 +378,6 @@ export function InstanceExperimentalSettings() {
   const statusCardsBlockedByManagedSummaries = summariesManaged && !enableSummaries;
   const summariesRequiredByManagedStatusCards = statusCardsManaged && enableStatusCards;
   const enableDecisions = experimentalQuery.data?.enableDecisions === true;
-  const enableGoalsSidebarLink = experimentalQuery.data?.enableGoalsSidebarLink === true;
   const enableCases = experimentalQuery.data?.enableCases === true;
   const enableServerInfoDebugView = experimentalQuery.data?.enableServerInfoDebugView === true;
   const enableSmokeLab = experimentalQuery.data?.enableSmokeLab === true;
@@ -621,16 +620,6 @@ export function InstanceExperimentalSettings() {
         disabled={toggleMutation.isPending}
         managed={managedKeys.enableDecisions}
         ariaLabel="Toggle decisions experimental setting"
-      />
-
-      <ExperimentalToggleCard
-        title="Goals Sidebar Link"
-        description="Restore the Goals item in the main sidebar while the goals surface is being evaluated."
-        checked={enableGoalsSidebarLink}
-        onCheckedChange={(checked) => toggleMutation.mutate({ enableGoalsSidebarLink: checked })}
-        disabled={toggleMutation.isPending}
-        managed={managedKeys.enableGoalsSidebarLink}
-        ariaLabel="Toggle goals sidebar link experimental setting"
       />
 
       <ExperimentalToggleCard

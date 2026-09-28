@@ -1243,8 +1243,9 @@ Terminal states: `done`, `cancelled`
 | PATCH  | `/api/projects/:projectId/workspaces/:workspaceId` | Update project workspace |
 | DELETE | `/api/projects/:projectId/workspaces/:workspaceId` | Delete project workspace |
 | GET    | `/api/companies/:companyId/goals`    | List goals         |
+| GET    | `/api/companies/:companyId/goals/overview` | Goal → project → task progress rollups, health, "not in a project yet" bucket, 7-day summary |
 | GET    | `/api/goals/:goalId`                 | Goal details       |
-| POST   | `/api/companies/:companyId/goals`    | Create goal        |
+| POST   | `/api/companies/:companyId/goals`    | Create goal (`title`, `description`, `level`, `status`, `parentId`, `ownerAgentId`, `horizon`: `long_term`/`year`/`quarter`, `targetDate`: `YYYY-MM-DD`) |
 | PATCH  | `/api/goals/:goalId`                 | Update goal        |
 | POST   | `/api/companies/:companyId/openclaw/invite-prompt` | Generate OpenClaw invite prompt (CEO/board only) |
 
