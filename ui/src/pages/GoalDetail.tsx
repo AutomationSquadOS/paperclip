@@ -19,7 +19,7 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { cn, issueUrl, projectUrl } from "../lib/utils";
 import { AgentName, ProjectRow, WorkHealthPill, WorkProgressBar } from "../components/GoalProgress";
 import { StatusIcon } from "../components/StatusIcon";
-import { GOAL_HORIZON_LABEL } from "../lib/goal-hierarchy";
+import { GOAL_HORIZON_LABEL, goalRoleLabel } from "../lib/goal-hierarchy";
 import { Link } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -175,13 +175,12 @@ export function GoalDetail() {
     <div className="space-y-6">
       <div className="space-y-3">
         <div className="flex items-center gap-2">
+          <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-soft-foreground">
+            {goalRoleLabel(goal.horizon)}
+          </span>
           {goal.horizon ? (
-            <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-soft-foreground">
-              {GOAL_HORIZON_LABEL[goal.horizon]}
-            </span>
-          ) : (
-            <span className="text-xs uppercase text-muted-foreground">{goal.level}</span>
-          )}
+            <span className="text-xs text-muted-foreground">{GOAL_HORIZON_LABEL[goal.horizon]}</span>
+          ) : null}
           <StatusBadge status={goal.status} />
           {goalEntry ? <WorkHealthPill progress={goalEntry.progress} /> : null}
           {goal.targetDate ? <span className="text-xs text-muted-foreground">Due {goal.targetDate}</span> : null}

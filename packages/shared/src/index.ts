@@ -2257,3 +2257,20 @@ export {
   buildGoalPlanningTaskDescription,
   buildGoalPlanningTaskTitle,
 } from "./goal-planning.js";
+export {
+  BRIEF_DETECT_MIN_CHARS,
+  BRIEF_DETECT_MIN_WORDS,
+  BRIEF_TITLE_MAX_CHARS,
+  GOAL_ROLE_LABEL,
+  buildGoalDescriptionFromBrief,
+  deriveGoalTitleFromBrief,
+  deriveProjectNameFromBrief,
+  deriveQuarterlyPriorities,
+  extractBrandName,
+  goalRoleFromHorizon,
+  isLongBrief,
+  resolveGoalIntake,
+  type GoalIntakeKind,
+  type GoalRole,
+  type ResolvedGoalIntake,
+} from "./brief-intake.js";

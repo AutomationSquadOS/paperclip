@@ -162,25 +162,55 @@ describe("Home", () => {
     expect(mockOpenNewIssue).toHaveBeenCalledWith({ title: "Plan the fall campaign" });
   });
 
-  it("starts with a goal when the company has none yet", async () => {
+  it("starts with a brief when the company has no goals yet", async () => {
     mockAgentsApi.list.mockResolvedValue([agent({})]);
     mockGoalsApi.overview.mockResolvedValue({ ...goalOverview, goals: [] });
     await render();
 
     expect(container.textContent).toContain("No goals yet");
+    expect(container.textContent).toContain("Start with a brief");
     const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
-    expect(textarea.placeholder).toBe("What do you want to achieve?");
+    expect(textarea.placeholder).toMatch(/Paste the whole idea/i);
     const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
     await act(async () => {
       setValue.call(textarea, "Get our first 100 paying customers");
       textarea.dispatchEvent(new Event("input", { bubbles: true }));
     });
     await act(async () => {
-      textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", metaKey: true, bubbles: true }));
     });
 
-    expect(mockStartGoal).toHaveBeenCalledWith({ title: "Get our first 100 paying customers" }, expect.anything());
+    expect(mockStartGoal).toHaveBeenCalledWith(
+      { title: "Get our first 100 paying customers", kind: "brief" },
+      expect.anything(),
+    );
     expect(mockOpenNewIssue).not.toHaveBeenCalled();
+  });
+
+  it("promotes a long paste in Goal mode to a brief", async () => {
+    mockAgentsApi.list.mockResolvedValue([agent({})]);
+    await render();
+
+    const goalTab = [...container.querySelectorAll("[role='tab']")].find((tab) => tab.textContent === "Goal");
+    await act(async () => {
+      goalTab?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
+    const brief =
+      "launch a faceless youtube channel for BroncoBro.com that syndicates Classic Ford Broncos from a listing site and then creates captivating data driven videos with technicals and a standardized workflow that runs on each newly posted listing once the existing backlog is caught up plus thumbnails shorts reels and text posts.";
+    const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
+    await act(async () => {
+      setValue.call(textarea, brief);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    expect(container.textContent).toContain("Start from brief");
+    const submit = [...container.querySelectorAll("button")].find((button) => button.textContent?.includes("Start from brief"));
+    await act(async () => {
+      submit?.click();
+    });
+    expect(mockStartGoal).toHaveBeenCalledWith({ title: brief, kind: "brief" }, expect.anything());
   });
 
   it("guides a brand-new company to hire its first agent", async () => {

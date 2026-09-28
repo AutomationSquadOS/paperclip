@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { GOAL_STATUSES, GOAL_LEVELS } from "@paperclipai/shared";
+import { GOAL_STATUSES, GOAL_LEVELS, isLongBrief, resolveGoalIntake } from "@paperclipai/shared";
 import { useDialog } from "../context/DialogContext";
 import { useCompany } from "../context/CompanyContext";
 import { goalsApi } from "../api/goals";
@@ -86,11 +86,17 @@ export function NewGoalDialog() {
 
   function handleSubmit() {
     if (!selectedCompanyId || !title.trim()) return;
-    createGoal.mutate({
+    const intake = resolveGoalIntake({
       title: title.trim(),
-      description: description.trim() || undefined,
+      description: description.trim() || null,
+      kind: isLongBrief(title) ? "brief" : "goal",
+    });
+    createGoal.mutate({
+      title: intake.title,
+      description: intake.description || undefined,
       status,
       level,
+      horizon: intake.kind === "brief" ? intake.companyHorizon : undefined,
       ...(appliedParentId ? { parentId: appliedParentId } : {}),
     });
   }

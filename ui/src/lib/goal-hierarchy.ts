@@ -1,4 +1,5 @@
-import type { Agent, GoalHorizon, WorkHealth } from "@paperclipai/shared";
+import type { Agent, GoalHorizon, GoalRole, WorkHealth } from "@paperclipai/shared";
+import { GOAL_ROLE_LABEL, goalRoleFromHorizon } from "@paperclipai/shared";
 
 export const WORK_HEALTH_LABEL: Record<WorkHealth, string> = {
   not_started: "Not started",
@@ -29,6 +30,12 @@ export const GOAL_HORIZON_LABEL: Record<GoalHorizon, string> = {
   year: "This year",
   quarter: "This quarter",
 };
+
+export { GOAL_ROLE_LABEL, goalRoleFromHorizon };
+
+export function goalRoleLabel(horizon: string | null | undefined): string {
+  return GOAL_ROLE_LABEL[goalRoleFromHorizon(horizon) as GoalRole];
+}
 
 function isBuiltInAgent(agent: Agent) {
   const metadata = agent.metadata as Record<string, unknown> | null | undefined;

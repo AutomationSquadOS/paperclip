@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { Agent, GoalOverview, GoalOverviewEntry, GoalOverviewProject } from "@paperclipai/shared";
+import type { Agent, GoalOverview, GoalOverviewEntry } from "@paperclipai/shared";
 import { AlertTriangle, CheckCircle2, ChevronRight, FolderOpen, Inbox, Plus, Target, TrendingUp } from "lucide-react";
 import { Link } from "@/lib/router";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { StartGoalComposer } from "../components/StartGoalComposer";
 import { StatusIcon } from "../components/StatusIcon";
 import { AgentName, HierarchyRow, ProjectRow, WorkHealthPill, WorkProgressBar } from "../components/GoalProgress";
-import { GOAL_HORIZON_LABEL } from "../lib/goal-hierarchy";
+import { GOAL_HORIZON_LABEL, goalRoleLabel } from "../lib/goal-hierarchy";
 import { queryKeys } from "../lib/queryKeys";
 import { cn, issueUrl, projectUrl } from "../lib/utils";
 
@@ -48,7 +48,8 @@ export function Goals() {
   }
   if (isLoading) return <PageSkeleton variant="list" />;
 
-  const topGoals = overview ? topLevelGoals(overview) : [];
+  const topGoals = overview ? companyGoals(overview) : [];
+  const quarterPriorities = overview ? quarterGoals(overview) : [];
 
   return (
     <div className="mx-auto flex w-full max-w-(--home-content-max) flex-col gap-6 animate-rise-in" data-testid="goals-page">
@@ -56,7 +57,7 @@ export function Goals() {
         <div className="flex flex-col gap-1">
           <h1 className="font-display text-3xl text-foreground">Goals</h1>
           <p className="max-w-xl text-sm text-muted-foreground">
-            Start with a goal. Projects move goals forward, tasks move projects forward, and progress rolls back up.
+            Company goals are this-year or long-term. This-quarter priorities sit under them. Projects move those priorities, and tasks do the work.
           </p>
         </div>
         <Button size="sm" variant="outline" onClick={() => openNewGoal()}>
@@ -66,7 +67,10 @@ export function Goals() {
       </header>
 
       <section className="rounded-2xl border bg-card p-5 shadow-xs md:p-6">
-        <h2 className="mb-3 text-base font-semibold">Here's a goal</h2>
+        <h2 className="mb-3 text-base font-semibold">Start with a brief</h2>
+        <p className="mb-3 text-sm text-muted-foreground">
+          Goals stay short and measurable. Paste a long idea here and we'll draft the company goal and this-quarter priorities.
+        </p>
         <StartGoalComposer />
       </section>
 
@@ -74,13 +78,36 @@ export function Goals() {
 
       {overview ? <WeeklySummary overview={overview} /> : null}
 
-      {topGoals.length === 0 ? (
-        <EmptyState icon={Target} message="No goals yet. Type one above and your lead agent will plan the work." />
+      {topGoals.length === 0 && quarterPriorities.length === 0 ? (
+        <EmptyState icon={Target} message="No goals yet. Paste a brief above, or type a short company goal." />
       ) : (
-        <div className="flex flex-col gap-4">
-          {topGoals.map((entry) => (
-            <GoalCard key={entry.goal.id} entry={entry} overview={overview!} agentById={agentById} />
-          ))}
+        <div className="flex flex-col gap-6">
+          {quarterPriorities.length > 0 ? (
+            <section className="flex flex-col gap-3" data-testid="goals-this-quarter">
+              <div>
+                <h2 className="text-base font-semibold">This quarter</h2>
+                <p className="text-sm text-muted-foreground">Ninety-day priorities. Each one should finish this quarter and serve a company goal.</p>
+              </div>
+              <div className="flex flex-col gap-3">
+                {quarterPriorities.map((entry) => (
+                  <GoalCard key={entry.goal.id} entry={entry} overview={overview!} agentById={agentById} compact />
+                ))}
+              </div>
+            </section>
+          ) : null}
+          {topGoals.length > 0 ? (
+            <section className="flex flex-col gap-3" data-testid="goals-company">
+              <div>
+                <h2 className="text-base font-semibold">Company goals</h2>
+                <p className="text-sm text-muted-foreground">This year or long-term. Keep them concise and measurable.</p>
+              </div>
+              <div className="flex flex-col gap-4">
+                {topGoals.map((entry) => (
+                  <GoalCard key={entry.goal.id} entry={entry} overview={overview!} agentById={agentById} />
+                ))}
+              </div>
+            </section>
+          ) : null}
         </div>
       )}
 
@@ -89,15 +116,27 @@ export function Goals() {
   );
 }
 
-function topLevelGoals(overview: GoalOverview) {
+function sortGoals(entries: GoalOverviewEntry[]) {
+  return [...entries].sort(
+    (a, b) =>
+      (GOAL_STATUS_ORDER[a.goal.status] ?? 9) - (GOAL_STATUS_ORDER[b.goal.status] ?? 9) ||
+      new Date(a.goal.createdAt).getTime() - new Date(b.goal.createdAt).getTime(),
+  );
+}
+
+function companyGoals(overview: GoalOverview) {
   const ids = new Set(overview.goals.map((entry) => entry.goal.id));
-  return overview.goals
-    .filter((entry) => !entry.goal.parentId || !ids.has(entry.goal.parentId))
-    .sort(
-      (a, b) =>
-        (GOAL_STATUS_ORDER[a.goal.status] ?? 9) - (GOAL_STATUS_ORDER[b.goal.status] ?? 9) ||
-        new Date(a.goal.createdAt).getTime() - new Date(b.goal.createdAt).getTime(),
-    );
+  return sortGoals(
+    overview.goals.filter(
+      (entry) =>
+        entry.goal.horizon !== "quarter" &&
+        (!entry.goal.parentId || !ids.has(entry.goal.parentId)),
+    ),
+  );
+}
+
+function quarterGoals(overview: GoalOverview) {
+  return sortGoals(overview.goals.filter((entry) => entry.goal.horizon === "quarter"));
 }
 
 function WeeklySummary({ overview }: { overview: GoalOverview }) {
@@ -129,22 +168,27 @@ function GoalCard({
   entry,
   overview,
   agentById,
+  compact = false,
 }: {
   entry: GoalOverviewEntry;
   overview: GoalOverview;
   agentById: Map<string, Agent>;
+  compact?: boolean;
 }) {
   const projectById = new Map(overview.projects.map((project) => [project.id, project]));
   const goalById = new Map(overview.goals.map((goal) => [goal.goal.id, goal]));
   const projects = entry.projectIds.flatMap((id) => projectById.get(id) ?? []);
-  const children = entry.childGoalIds.flatMap((id) => goalById.get(id) ?? []);
+  const children = compact ? [] : entry.childGoalIds.flatMap((id) => goalById.get(id) ?? []);
   const { goal } = entry;
   return (
     <article className="rounded-2xl border bg-card shadow-xs" data-testid="goal-card">
       <div className="flex flex-col gap-3 p-5">
         <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-soft-foreground">
+            {goalRoleLabel(goal.horizon)}
+          </span>
           {goal.horizon ? (
-            <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-soft-foreground">
+            <span className="text-xs text-muted-foreground">
               {GOAL_HORIZON_LABEL[goal.horizon]}
             </span>
           ) : null}
@@ -172,7 +216,7 @@ function GoalCard({
               icon={<Target className="h-4 w-4" />}
               iconClass="bg-brand-soft text-brand-soft-foreground"
               title={child.goal.title}
-              subtitle={child.goal.horizon ? GOAL_HORIZON_LABEL[child.goal.horizon] : "Sub-goal"}
+              subtitle={goalRoleLabel(child.goal.horizon)}
               progress={child.progress}
             />
           ))}

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { Agent, AgentStatus, Approval, GoalOverview, Issue } from "@paperclipai/shared";
+import { isLongBrief, type Agent, type AgentStatus, type Approval, type GoalIntakeKind, type GoalOverview, type Issue } from "@paperclipai/shared";
 import {
   ArrowRight,
   Check,
   CheckCircle2,
   ChevronRight,
+  FileText,
   Inbox as InboxIcon,
   LayoutDashboard,
   ListTodo,
@@ -52,7 +53,12 @@ const GOAL_IDEAS = [
   "Publish two articles every week",
 ];
 
-type ComposerMode = "goal" | "task";
+const BRIEF_IDEAS = [
+  "Launch a YouTube channel that syndicates listings and publishes every new one",
+  "Stand up a new brand line with a catch-up backlog and a weekly publish rhythm",
+];
+
+type ComposerMode = "brief" | "goal" | "task";
 
 const FRIENDLY_TASK_STATUS: Record<string, string> = {
   backlog: "Not started",
@@ -189,16 +195,18 @@ export function Home() {
     (entry) => entry.goal.status === "active" || entry.goal.status === "planned",
   );
   const hasGoals = liveGoals.length > 0;
-  const mode: ComposerMode = chosenMode ?? (hasGoals ? "task" : "goal");
+  const mode: ComposerMode = chosenMode ?? (hasGoals ? "task" : "brief");
+  const asBrief = mode === "brief" || (mode === "goal" && isLongBrief(draft));
   const showChecklist = !agentsLoading && !(hasAgents && (hasGoals || hasTasks) && hasResults);
   const workingCount = liveRuns?.length ?? dashboard?.agents.running ?? 0;
 
   function submitDraft(event?: FormEvent) {
     event?.preventDefault();
     const title = draft.trim();
-    if (mode === "goal") {
+    if (mode === "brief" || mode === "goal") {
       if (!title || goalPending) return;
-      startGoal({ title }, { onSuccess: () => setDraft("") });
+      const kind: GoalIntakeKind = asBrief ? "brief" : "goal";
+      startGoal({ title, kind }, { onSuccess: () => setDraft("") });
       return;
     }
     openNewIssue(title ? { title } : {});
@@ -206,9 +214,9 @@ export function Home() {
   }
 
   function handleComposerKey(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
-      submitDraft(event);
-    }
+    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+    if (asBrief && !event.metaKey && !event.ctrlKey) return;
+    submitDraft(event);
   }
 
   const hireAgent = () => openOnboarding({ initialStep: 2, companyId: selectedCompanyId });
@@ -225,7 +233,7 @@ export function Home() {
             </h1>
             <p className="max-w-xl text-base text-muted-foreground">
               {hasAgents
-                ? "Start with a goal and your lead agent plans the projects and tasks, or hand off a single task."
+                ? "Paste a long idea as a brief, type a short company goal, or hand off a single task."
                 : "Paperclip runs a team of AI agents for you. Start by hiring your first one."}
             </p>
           </div>
@@ -234,56 +242,72 @@ export function Home() {
             <form onSubmit={submitDraft} className="flex flex-col gap-3">
               <div className="rounded-2xl border bg-surface-raised shadow-md transition-shadow focus-within:border-ring/60 focus-within:shadow-lg focus-within:ring-4 focus-within:ring-ring/15">
                 <div role="tablist" aria-label="What are you adding?" className="flex gap-1 px-4 pt-3">
-                  {(["goal", "task"] as const).map((option) => (
+                  {([
+                    { id: "brief" as const, label: "Brief", icon: FileText },
+                    { id: "goal" as const, label: "Goal", icon: Target },
+                    { id: "task" as const, label: "Task", icon: ListTodo },
+                  ]).map((option) => (
                     <button
-                      key={option}
+                      key={option.id}
                       type="button"
                       role="tab"
-                      aria-selected={mode === option}
+                      aria-selected={mode === option.id}
                       onClick={() => {
-                        setChosenMode(option);
+                        setChosenMode(option.id);
                         composerRef.current?.focus();
                       }}
                       className={cn(
                         "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors",
-                        mode === option ? "bg-brand-soft text-brand-soft-foreground" : "text-muted-foreground hover:text-foreground",
+                        mode === option.id ? "bg-brand-soft text-brand-soft-foreground" : "text-muted-foreground hover:text-foreground",
                       )}
                     >
-                      {option === "goal" ? <Target className="h-3.5 w-3.5" /> : <ListTodo className="h-3.5 w-3.5" />}
-                      {option === "goal" ? "Goal" : "Task"}
+                      <option.icon className="h-3.5 w-3.5" />
+                      {option.label}
                     </button>
                   ))}
                 </div>
                 <label htmlFor="home-composer" className="sr-only">
-                  {mode === "goal" ? "Describe a goal" : "Describe a task for your agents"}
+                  {asBrief ? "Paste a brief" : mode === "goal" ? "Describe a short goal" : "Describe a task for your agents"}
                 </label>
                 <textarea
                   id="home-composer"
                   ref={composerRef}
                   value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setDraft(next);
+                    if (mode === "goal" && isLongBrief(next)) setChosenMode("brief");
+                  }}
                   onKeyDown={handleComposerKey}
-                  rows={2}
-                  placeholder={mode === "goal" ? "What do you want to achieve?" : "What should your agents work on next?"}
+                  rows={asBrief ? 6 : 2}
+                  placeholder={
+                    asBrief
+                      ? "Paste the whole idea. We'll make a short company goal and a plan for your OK."
+                      : mode === "goal"
+                        ? "Short and measurable. e.g. Get our first 100 paying customers"
+                        : "What should your agents work on next?"
+                  }
                   className="block min-h-(--home-composer-min) w-full resize-none rounded-2xl bg-transparent px-5 pt-4 text-base text-foreground outline-none placeholder:text-muted-foreground/80"
                 />
                 <div className="flex items-center justify-between gap-3 px-4 pb-3">
                   <span className="hidden text-xs text-muted-foreground sm:inline">
-                    {mode === "goal"
+                    {asBrief
                       ? lead
-                        ? `${lead.name} will plan projects, tasks, hires, and budget for your OK.`
-                        : "Your lead agent will plan projects, tasks, hires, and budget for your OK."
-                      : "Press Enter to continue. You'll pick who does it next."}
+                        ? `${lead.name} will turn this into a company goal, this-quarter priorities, and a plan for your OK.`
+                        : "Your lead agent will turn this into a company goal, this-quarter priorities, and a plan for your OK."
+                      : mode === "goal"
+                        ? "Goals stay short. Long ideas belong in a brief."
+                        : "Press Enter to continue. You'll pick who does it next."}
                   </span>
-                  <Button type="submit" className="ml-auto rounded-full px-5" disabled={mode === "goal" && (goalPending || !draft.trim())}>
-                    {mode === "goal" ? (goalPending ? "Setting goal…" : "Set goal") : "New task"}
+                  <Button type="submit" className="ml-auto rounded-full px-5" disabled={(mode === "brief" || mode === "goal") && (goalPending || !draft.trim())}>
+                    {mode === "task" ? "New task" : goalPending ? "Starting…" : asBrief ? "Start from brief" : "Set goal"}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-medium text-muted-foreground">Try</span>
-                {(mode === "goal" ? GOAL_IDEAS : TASK_IDEAS).map((idea) => (
+                {(asBrief ? BRIEF_IDEAS : mode === "goal" ? GOAL_IDEAS : TASK_IDEAS).map((idea) => (
                   <button
                     key={idea}
                     type="button"
@@ -330,16 +354,16 @@ export function Home() {
               actionLabel: "Hire",
             },
             {
-              title: "Set your first goal",
-              detail: "Say what you want to achieve. Your lead agent plans the projects and tasks.",
+              title: "Start with a brief",
+              detail: "Paste the whole idea. Goals stay short; long ideas go here.",
               done: hasGoals || hasTasks,
               action: hasAgents
                 ? () => {
-                    setChosenMode("goal");
+                    setChosenMode("brief");
                     composerRef.current?.focus();
                   }
                 : hireAgent,
-              actionLabel: "Set a goal",
+              actionLabel: "Write a brief",
             },
             {
               title: "Review the result",
@@ -352,7 +376,7 @@ export function Home() {
         />
       ) : null}
 
-      {hasAgents && goalOverview ? <GoalsCard overview={goalOverview} onStart={() => { setChosenMode("goal"); composerRef.current?.focus(); }} /> : null}
+      {hasAgents && goalOverview ? <GoalsCard overview={goalOverview} onStart={() => { setChosenMode("brief"); composerRef.current?.focus(); }} /> : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <NeedsYouCard approvals={pendingApprovals} blocked={dashboard?.tasks.blocked ?? 0} incidents={dashboard?.budgets.activeIncidents ?? 0} />
@@ -691,8 +715,8 @@ function GoalsCard({ overview, onStart }: { overview: GoalOverview; onStart: () 
           icon={Target}
           iconClass="bg-brand-soft text-brand-soft-foreground"
           title="No goals yet"
-          message="Everything your agents do should move a goal forward. Set one and your lead agent will plan the work."
-          action={<Button size="sm" onClick={onStart}>Set a goal</Button>}
+          message="Paste a brief or type a short company goal. Your lead will plan this-quarter priorities, projects, and tasks."
+          action={<Button size="sm" onClick={onStart}>Start with a brief</Button>}
         />
       ) : (
         <div className="grid grid-cols-1 gap-2 px-3 py-3 md:grid-cols-2">

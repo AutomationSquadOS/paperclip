@@ -95,6 +95,13 @@ function OverviewContent({
         imageUploadHandler={imageUploadHandler}
       />
 
+      <section className="rounded-2xl border bg-card p-4 shadow-xs" data-testid="project-checkpoints">
+        <h3 className="text-sm font-semibold">Checkpoints</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          The project's near-term finish lines — what done looks like this quarter. Your lead adds them in the plan; work stays in tasks below.
+        </p>
+      </section>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
         <div>
           <span className="text-muted-foreground">Status</span>

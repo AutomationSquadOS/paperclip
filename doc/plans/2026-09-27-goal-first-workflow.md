@@ -133,6 +133,22 @@ Both columns are nullable with no backfill and no constraint changes. Existing g
 | 2 | Server-side `POST /companies/:id/goals/plan` (atomic goal + planning task, CLI/API parity); goal horizon grouping (long-term / year / quarter sections); per-manager rollups on the org chart | Planned |
 | 3 | Auto-suggest project/goal for unlinked tasks; one-click "file under…" from the unplanned bucket; plan approval card that lists proposed projects/hires/budget with a single Approve | Planned |
 | 4 | Scheduled weekly summary routine by the lead agent; historical progress trend per goal | Planned |
+| 5 | Brief intake + company-goal / this-quarter-priority labeling (plain-language operating cadence; no vendor jargon) | **Shipping in the brief-intake PR** |
+
+## Brief intake and operating cadence (2026-09-27 addendum)
+
+Rob pasted a 300-word launch idea into the goal box. A goal title must stay short and measurable. Long ideas are a **Brief**.
+
+Plain-language hierarchy (mapped from a common small-company operating cadence; do not use that system's trademarks in the product):
+
+1. **Company goal** — `goals.horizon` = `year` or `long_term`. Concise, quantitative. Several per company.
+2. **This-quarter priority** — `goals.horizon` = `quarter`, `parentId` = company goal. Ninety days, owned, short title.
+3. **Project** — body of work under a priority (or directly under the company goal). **Checkpoints** are the project's near-term finish lines (planned in the plan document; created as dated tasks after approval).
+4. **Task** — all actual work. Must carry `projectId`. Unplanned bucket remains.
+
+A Brief creates: one company goal (short title, full text in description), 1–3 this-quarter priorities, a starter project, and a planning task. The planner restates the goal, splits catch-up vs recurring workflow vs creative system, adds checkpoints / first tasks / hires / budget, and asks for approval. A micro-brand stays under the current company with the brand in the titles. No new Paperclip company.
+
+Home keeps Brief / Goal / Task. Long text in Goal mode is treated as a Brief. Goal titles are never the raw essay.
 
 ## Risks
 
