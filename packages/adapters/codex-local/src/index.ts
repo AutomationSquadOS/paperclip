@@ -51,9 +51,9 @@ export const models = [
   { id: "gpt-5-nano", label: "gpt-5-nano" },
   { id: "o3-mini", label: "o3-mini" },
   { id: "codex-mini-latest", label: "Codex Mini" },
-  { id: "gpt-6-astra", label: "gpt-6-astra" },
-  { id: "gpt-6-sol", label: "gpt-6-sol" },
-  { id: "gpt-6-luna", label: "gpt-6-luna" },
+  { id: "gpt-6-astra", label: "GPT-6 Astra" },
+  { id: "gpt-6-sol", label: "GPT-6 Sol" },
+  { id: "gpt-6-luna", label: "GPT-6 Luna" },
 ];
 
 export const modelProfiles: AdapterModelProfileDefinition[] = [

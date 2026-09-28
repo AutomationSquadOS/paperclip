@@ -98,6 +98,37 @@ export function resolveSharedCodexHomeDir(
   return fromEnv ? path.resolve(fromEnv) : path.join(os.homedir(), ".codex");
 }
 
+/**
+ * Hosted boards persist `OPENAI_API_KEY=""` on each Codex agent so a laptop
+ * host key cannot leak into isolated homes. On a single-tenant VPS the compose
+ * file's OPENAI_API_KEY *is* the operator key. Inherit it only when the
+ * instance is authenticated or the operator opts in.
+ */
+export function resolveInheritedHostOpenAiApiKey(
+  env: NodeJS.ProcessEnv = process.env,
+): string | null {
+  const allow =
+    env.PAPERCLIP_DEPLOYMENT_MODE === "authenticated" ||
+    TRUTHY_ENV_RE.test(env.PAPERCLIP_CODEX_USE_HOST_OPENAI_API_KEY ?? "");
+  if (!allow) return null;
+  return nonEmpty(env.OPENAI_API_KEY);
+}
+
+export async function ensureSharedCodexHomeFromHostApiKey(
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<{ wrote: boolean; home: string; reason: "no_host_key" | "already_present" | "seeded" }> {
+  const home = resolveSharedCodexHomeDir(env);
+  const apiKey = resolveInheritedHostOpenAiApiKey(env);
+  if (!apiKey) {
+    return { wrote: false, home, reason: "no_host_key" };
+  }
+  if (await codexHomeHasUsableAuth(home)) {
+    return { wrote: false, home, reason: "already_present" };
+  }
+  await writeApiKeyAuthJson(home, apiKey);
+  return { wrote: true, home, reason: "seeded" };
+}
+
 function isWorktreeMode(env: NodeJS.ProcessEnv): boolean {
   return TRUTHY_ENV_RE.test(env.PAPERCLIP_IN_WORKTREE ?? "");
 }
@@ -765,7 +796,8 @@ export async function evaluateCodexCredentialReadiness(
   const env = input.env ?? process.env;
   const configuredRaw = nonEmpty(input.configuredCodexHome ?? undefined);
   const configuredCodexHome = configuredRaw ? path.resolve(configuredRaw) : null;
-  const configuredApiKey = nonEmpty(input.configuredApiKey ?? undefined);
+  const configuredApiKey =
+    nonEmpty(input.configuredApiKey ?? undefined) ?? resolveInheritedHostOpenAiApiKey(env);
   const sharedSourceHome = resolveSharedCodexHomeDir(env);
 
   const configuredHomeIsManaged =

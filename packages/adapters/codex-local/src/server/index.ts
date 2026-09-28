@@ -14,6 +14,8 @@ export {
   reconcileManagedCodexHome,
   isManagedCodexHomePath,
   evaluateCodexCredentialReadiness,
+  ensureSharedCodexHomeFromHostApiKey,
+  resolveInheritedHostOpenAiApiKey,
   type ReconcileManagedCodexHomeInput,
   type ReconcileManagedCodexHomeResult,
   type ReconcileManagedCodexHomeStatus,

@@ -5,12 +5,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   CODEX_SYNC_ALLOWLIST,
   codexHomeHasUsableAuth,
+  ensureSharedCodexHomeFromHostApiKey,
   ensureSymlink,
   evaluateCodexCredentialReadiness,
   mergeManagedCodexMcpGateways,
   isManagedCodexHomePath,
   prepareManagedCodexHome,
   reconcileManagedCodexHome,
+  resolveInheritedHostOpenAiApiKey,
   seedManagedCodexHome,
   stageCodexHomeForSync,
   writeManagedCodexMcpConfig,
@@ -644,6 +646,44 @@ describe("evaluateCodexCredentialReadiness", () => {
     }
   });
 
+  it("inherits the host OPENAI_API_KEY on authenticated deployments when the agent key is empty", async () => {
+    const fx = await makeFixture();
+    try {
+      const result = await evaluateCodexCredentialReadiness({
+        env: {
+          ...fx.env,
+          PAPERCLIP_DEPLOYMENT_MODE: "authenticated",
+          OPENAI_API_KEY: "sk-host-vps",
+        },
+        companyId: "company-1",
+        configuredCodexHome: fx.managedAgentHome,
+        configuredApiKey: "",
+      });
+      expect(result).toMatchObject({ managed: true, authMode: "api", ready: true });
+    } finally {
+      await fs.rm(fx.root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not inherit a host OPENAI_API_KEY in local_trusted mode", async () => {
+    const fx = await makeFixture();
+    try {
+      const result = await evaluateCodexCredentialReadiness({
+        env: {
+          ...fx.env,
+          PAPERCLIP_DEPLOYMENT_MODE: "local_trusted",
+          OPENAI_API_KEY: "sk-host-dev",
+        },
+        companyId: "company-1",
+        configuredCodexHome: fx.managedAgentHome,
+        configuredApiKey: "",
+      });
+      expect(result).toMatchObject({ managed: true, authMode: "subscription", ready: false });
+    } finally {
+      await fs.rm(fx.root, { recursive: true, force: true });
+    }
+  });
+
   it("is ready when the shared source home carries usable subscription auth", async () => {
     const fx = await makeFixture();
     try {
@@ -763,6 +803,83 @@ describe("evaluateCodexCredentialReadiness", () => {
       });
 
       expect((await fs.stat(configPath)).mode & 0o777).toBe(0o600);
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("resolveInheritedHostOpenAiApiKey", () => {
+  it("returns null unless the instance is authenticated or explicitly opted in", () => {
+    expect(
+      resolveInheritedHostOpenAiApiKey({
+        OPENAI_API_KEY: "sk-host",
+        PAPERCLIP_DEPLOYMENT_MODE: "local_trusted",
+      }),
+    ).toBeNull();
+    expect(
+      resolveInheritedHostOpenAiApiKey({
+        OPENAI_API_KEY: "sk-host",
+        PAPERCLIP_DEPLOYMENT_MODE: "authenticated",
+      }),
+    ).toBe("sk-host");
+    expect(
+      resolveInheritedHostOpenAiApiKey({
+        OPENAI_API_KEY: "sk-host",
+        PAPERCLIP_CODEX_USE_HOST_OPENAI_API_KEY: "1",
+      }),
+    ).toBe("sk-host");
+  });
+});
+
+describe("ensureSharedCodexHomeFromHostApiKey", () => {
+  it("writes auth.json from the host key when the shared home is empty", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "paperclip-codex-shared-seed-"));
+    try {
+      const home = path.join(root, "shared-codex-home");
+      const result = await ensureSharedCodexHomeFromHostApiKey({
+        CODEX_HOME: home,
+        PAPERCLIP_DEPLOYMENT_MODE: "authenticated",
+        OPENAI_API_KEY: "sk-host-seed",
+      });
+      expect(result).toMatchObject({ wrote: true, home: path.resolve(home), reason: "seeded" });
+      const written = JSON.parse(await fs.readFile(path.join(home, "auth.json"), "utf8"));
+      expect(written).toEqual({ OPENAI_API_KEY: "sk-host-seed" });
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not overwrite an existing usable auth.json", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "paperclip-codex-shared-keep-"));
+    try {
+      const home = path.join(root, "shared-codex-home");
+      await fs.mkdir(home, { recursive: true });
+      await fs.writeFile(path.join(home, "auth.json"), '{"OPENAI_API_KEY":"sk-existing"}\n', "utf8");
+      const result = await ensureSharedCodexHomeFromHostApiKey({
+        CODEX_HOME: home,
+        PAPERCLIP_DEPLOYMENT_MODE: "authenticated",
+        OPENAI_API_KEY: "sk-host-seed",
+      });
+      expect(result).toMatchObject({ wrote: false, reason: "already_present" });
+      const written = JSON.parse(await fs.readFile(path.join(home, "auth.json"), "utf8"));
+      expect(written).toEqual({ OPENAI_API_KEY: "sk-existing" });
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("skips seeding when no host key is eligible", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "paperclip-codex-shared-skip-"));
+    try {
+      const home = path.join(root, "shared-codex-home");
+      const result = await ensureSharedCodexHomeFromHostApiKey({
+        CODEX_HOME: home,
+        PAPERCLIP_DEPLOYMENT_MODE: "local_trusted",
+        OPENAI_API_KEY: "sk-host-dev",
+      });
+      expect(result).toMatchObject({ wrote: false, reason: "no_host_key" });
+      await expect(fs.access(path.join(home, "auth.json"))).rejects.toThrow();
     } finally {
       await fs.rm(root, { recursive: true, force: true });
     }

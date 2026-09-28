@@ -60,8 +60,10 @@ import {
 } from "./parse.js";
 import {
   codexHomeHasUsableAuth,
+  ensureSharedCodexHomeFromHostApiKey,
   evaluateCodexCredentialReadiness,
   isManagedCodexHomePath,
+  resolveInheritedHostOpenAiApiKey,
   pathExists,
   prepareManagedCodexHome,
   resolveManagedCodexHomeDir,
@@ -520,7 +522,8 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const configuredOpenAiApiKey =
     typeof envConfig.OPENAI_API_KEY === "string" && envConfig.OPENAI_API_KEY.trim().length > 0
       ? envConfig.OPENAI_API_KEY.trim()
-      : null;
+      : resolveInheritedHostOpenAiApiKey(process.env);
+  await ensureSharedCodexHomeFromHostApiKey(process.env);
   // A configured CODEX_HOME that lives under the Paperclip-managed company tree
   // (the per-agent home set by the server isolation guard) still needs auth
   // seeded — it ships with no credentials and OPENAI_API_KEY="" by default.

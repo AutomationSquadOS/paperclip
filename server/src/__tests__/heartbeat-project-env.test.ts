@@ -496,6 +496,9 @@ describe("resolveExecutionRunAdapterConfig codex_local credential pre-dispatch g
     vi.stubEnv("PAPERCLIP_HOME", paperclipHome);
     vi.stubEnv("PAPERCLIP_INSTANCE_ID", "default");
     vi.stubEnv("CODEX_HOME", sharedCodexHome);
+    vi.stubEnv("PAPERCLIP_DEPLOYMENT_MODE", "");
+    vi.stubEnv("PAPERCLIP_CODEX_USE_HOST_OPENAI_API_KEY", "");
+    vi.stubEnv("OPENAI_API_KEY", "");
     const managedAgentHome = path.join(
       paperclipHome,
       "instances",
@@ -585,6 +588,31 @@ describe("resolveExecutionRunAdapterConfig codex_local credential pre-dispatch g
       } as any,
     });
     expect(result.resolvedConfig.env).toMatchObject({ OPENAI_API_KEY: "sk-agent-resolved" });
+  });
+
+  it("dispatches normally when an authenticated host OPENAI_API_KEY can be inherited", async () => {
+    const { managedAgentHome } = await stubManagedCodexEnv({ seedSharedAuth: false });
+    vi.stubEnv("PAPERCLIP_DEPLOYMENT_MODE", "authenticated");
+    vi.stubEnv("OPENAI_API_KEY", "sk-host-vps");
+    const resolveAdapterConfigForRuntime = vi.fn().mockResolvedValue({
+      config: { command: "codex", env: { CODEX_HOME: managedAgentHome, OPENAI_API_KEY: "" } },
+      secretKeys: new Set<string>(),
+      manifest: [],
+    });
+
+    const result = await resolveExecutionRunAdapterConfig({
+      companyId: "company-1",
+      agentId: "agent-1",
+      adapterType: "codex_local",
+      executionRunConfig: { command: "codex", env: { CODEX_HOME: managedAgentHome, OPENAI_API_KEY: "" } },
+      projectEnv: null,
+      secretsSvc: {
+        resolveAdapterConfigForRuntime,
+        resolveEnvBindings: vi.fn(),
+        collectMissingRuntimeBindings: vi.fn().mockResolvedValue([]),
+      } as any,
+    });
+    expect(result.resolvedConfig.command).toBe("codex");
   });
 
   it("dispatches normally when the shared host home carries subscription auth", async () => {

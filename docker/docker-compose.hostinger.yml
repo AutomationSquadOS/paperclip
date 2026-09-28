@@ -54,6 +54,7 @@ services:
       BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET must be set}"
       PAPERCLIP_FALLBACK_CURSOR_TO_CLAUDE: "1"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      # Used to seed /paperclip/.codex/auth.json for Codex CLI (authenticated mode).
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       CURSOR_API_KEY: "${CURSOR_API_KEY:-}"
     volumes:
