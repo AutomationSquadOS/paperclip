@@ -57,6 +57,7 @@ import {
   statusCardService,
   toolAccessService,
 } from "./services/index.js";
+import { ensureSharedCodexHomeFromHostApiKey } from "@paperclipai/adapter-codex-local/server";
 import { queueIssueAssignmentWakeup } from "./services/issue-assignment-wakeup.js";
 import { resolveWorktreeRunExecutionActivationState } from "./services/instance-settings.js";
 import {
@@ -805,10 +806,16 @@ export async function startServer(): Promise<StartedServer> {
       logger.error({ err }, "startup reconciliation of cloud upstream runs failed");
     });
 
-  // Backfill auth.json into any already-isolated codex_local managed home that
-  // was created by the #8272 isolation guard before the Phase 1 seeding fix.
-  // Idempotent; the Phase 1 execute-time seeding covers new strandings.
-  void reconcileCodexLocalManagedHomesOnStartup(db)
+  // Authenticated / opted-in hosts may have OPENAI_API_KEY in compose but no
+  // ~/.codex/auth.json (Codex CLI >= 0.122 reads the file, not the env var).
+  // Seed the shared home first so managed-home backfill has a source.
+  void ensureSharedCodexHomeFromHostApiKey()
+    .then((shared) => {
+      if (shared.wrote) {
+        logger.info({ home: shared.home }, "seeded shared Codex home from host OPENAI_API_KEY");
+      }
+      return reconcileCodexLocalManagedHomesOnStartup(db);
+    })
     .then((result) => {
       if (result.seeded > 0 || result.failed > 0) {
         logger.warn(

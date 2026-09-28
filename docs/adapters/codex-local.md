@@ -58,6 +58,7 @@ A managed home is created empty, so the adapter must provision auth into it befo
 - **Managed homes** (the default home and any configured `CODEX_HOME` under the company tree) are always seeded: the ChatGPT-subscription `auth.json` is symlinked from the host Codex home, or, when a per-agent `OPENAI_API_KEY` is configured, an API-key `auth.json` is written instead.
 - **Genuine external overrides** (a `CODEX_HOME` outside the Paperclip-managed company tree) are treated as self-managed and are never seeded or overwritten.
 - **Fail-fast guard:** if a managed home ends up with no usable `auth.json` and no configured API key, the run fails with an explicit `adapter_failed` ("no Codex credentials provisioned for managed home …") rather than emitting an unauthenticated request.
+- **Authenticated host-key inherit:** when `PAPERCLIP_DEPLOYMENT_MODE=authenticated` (or `PAPERCLIP_CODEX_USE_HOST_OPENAI_API_KEY=1`) and the process has a non-empty `OPENAI_API_KEY`, Paperclip treats that host key as the Codex credential. It writes `{ "OPENAI_API_KEY": "..." }` into the shared Codex home when that home has no usable `auth.json`, then seeds managed homes from it. Local/dev isolation is unchanged: a host key is not inherited unless one of those flags is set.
 
 ### Auth ownership and precedence
 
