@@ -161,23 +161,37 @@ Because of that, follow these rules:
 
 **Step 9 — Delegate if needed.** Create subtasks with `POST /api/companies/{companyId}/issues`. Always set `parentId`, `projectId`, and `goalId` (copy them from the parent task). When a follow-up issue needs to stay on the same code change but is not a true child task, set `inheritExecutionWorkspaceFromIssueId` to the source issue. Set `billingCode` for cross-team work.
 
-## Goal-First Work (Goal → Project → Task)
+## Goal-First Work (Company goal → This-quarter priority → Project → Task)
 
-Work is organized top-down: **goals** (outcomes, optionally `horizon: long_term | year | quarter` and a `targetDate`) are moved forward by **projects** (objectives + success criteria, a `leadAgentId`), which are moved forward by **tasks** (one assignee each, optional subtasks). Progress rolls back up automatically: `GET /api/companies/{companyId}/goals/overview` returns each goal's and project's percent complete, health (`not_started | on_track | at_risk | off_track | done`), stuck counts, and a 7-day summary.
+Work is organized top-down. Use these plain labels (do not use vendor operating-system jargon in titles, comments, or plans):
 
-- **Every task you create must carry `projectId` and `goalId`.** When delegating, copy both from the parent. A project may serve several goals (`goalIds`).
-- **Work with no project** lands in the board's "Not in a project yet" bucket. If you pick one up, set the best-matching `projectId` (and its goal) before starting, or ask the goal owner in a comment.
-- **Ownership follows the org chart:** goal `ownerAgentId` → project `leadAgentId` → task assignee. Owners report status on their level; managers read their reports' rollups from the overview endpoint.
+- **Company goal** — `horizon: year` or `long_term`. Concise and measurable. One company can have several.
+- **This-quarter priority** — `horizon: quarter`, `parentId` = the company goal. A 90-day owned priority that serves that company goal. Short title.
+- **Project** — a body of work under a this-quarter priority (or directly under the company goal if no priority exists yet). Projects have **checkpoints** (project-level finish lines — the project's own near-term goals).
+- **Task** — all actual work. Every task must have a `projectId` (and therefore roll up to a priority and company goal). Work with no project lands in "Not in a project yet".
+
+Progress rolls back up automatically: `GET /api/companies/{companyId}/goals/overview` returns each goal's and project's percent complete, health (`not_started | on_track | at_risk | off_track | done`), stuck counts, and a 7-day summary.
+
+- **Every task you create must carry `projectId` and `goalId`.** When delegating, copy both from the parent. A project may serve several goals (`goalIds`) — typically its this-quarter priority plus the company goal.
+- **Ownership follows the org chart:** goal `ownerAgentId` → project `leadAgentId` → task assignee.
 - Filter a goal's or the unplanned tasks with `GET /api/companies/{companyId}/issues?goalId={goalId}` or `?withoutProject=true`.
+- A new brand or line of business inside the current company stays here. Put the brand in titles. Do **not** create a new Paperclip company.
 
-### Planning a goal ("here's a goal")
+### Planning a goal or a brief
 
-When the board sets a goal, the company lead gets a task titled `Plan the goal: …` linked to it. Do this, in order:
+When the board sets a short goal or pastes a **brief** (a long idea), the company lead gets a task titled `Plan the goal: …`. Do this, in order:
 
-1. Write the `plan` issue document: 1–4 projects (objective, success criteria, lead, target date), first tasks per project with owners, hires needed (role, reason, reporting line), and a monthly budget recommendation.
-2. Submit it for board approval: `POST /api/companies/{companyId}/approvals` with `type: "approve_ceo_strategy"`, `issueIds: [planningTaskId]`, and a payload such as `{ "goalId", "summary", "projects": [...], "hires": [...], "budgetRecommendation": { "monthlyCents", "notes" } }`. Move the planning task to `in_review` while you wait.
-3. After approval, create each project with `goalIds: [goalId]` and `leadAgentId`, then create tasks inside it with `projectId` + `goalId` + an assignee. Request hires through the normal hire flow (it creates `hire_agent` approvals when required), and budget changes through the normal budget/approval paths. Never bypass an approval or a budget hard stop.
-4. Comment with links to the projects you created and mark the planning task `done`.
+1. Write the `plan` issue document:
+   - restated company goal (short, quantitative, `year` or `long_term`);
+   - 1–3 this-quarter priorities (`horizon: quarter`, `parentId` = company goal);
+   - projects under those priorities (for a launch brief, typical split: catch-up backlog, recurring per-new-item workflow, creative / thumbnail / multi-platform system);
+   - 2–5 checkpoints per project;
+   - first tasks with owners;
+   - hires (role, reason, reporting line);
+   - monthly budget recommendation.
+2. Submit it for board approval: `POST /api/companies/{companyId}/approvals` with `type: "approve_ceo_strategy"`, `issueIds: [planningTaskId]`, and a payload such as `{ "goalId", "summary", "quarterlyPriorities": [...], "projects": [...], "checkpoints": [...], "hires": [...], "budgetRecommendation": { "monthlyCents", "notes" } }`. Move the planning task to `in_review` while you wait. Do not start the work until approved.
+3. After approval, create or update this-quarter priorities, create projects with `goalIds` + `leadAgentId`, then create checkpoint and work tasks with `projectId` + `goalId` + an assignee. Request hires through the normal hire flow, and budget changes through the normal budget/approval paths. Never bypass an approval or a budget hard stop.
+4. Comment with links to the priorities and projects you created and mark the planning task `done`.
 
 ## Managing A User's Inbox
 

@@ -1,3 +1,5 @@
+import { isLongBrief, resolveGoalIntake } from "@paperclipai/shared";
+
 export function parseOnboardingGoalInput(raw: string): {
   title: string;
   description: string | null;
@@ -5,6 +7,14 @@ export function parseOnboardingGoalInput(raw: string): {
   const trimmed = raw.trim();
   if (!trimmed) {
     return { title: "", description: null };
+  }
+
+  if (isLongBrief(trimmed)) {
+    const intake = resolveGoalIntake({ title: trimmed, kind: "brief" });
+    return {
+      title: intake.title,
+      description: intake.description,
+    };
   }
 
   const [firstLine, ...restLines] = trimmed.split(/\r?\n/);
